@@ -57,7 +57,7 @@ public partial class ApplicationDbContext : DbContext
         {
             entity.HasKey(e => e.FrequencyId).HasName("PRIMARY");
 
-            entity.Property(e => e.CreatedAt).HasDefaultValueSql("CURRENT_TIMESTAMP");
+            entity.Property(e => e.CreatedAt).HasDefaultValueSql("GETDATE()");
         });
 
         modelBuilder.Entity<FrequencyDetail>(entity =>
@@ -71,8 +71,8 @@ public partial class ApplicationDbContext : DbContext
         {
             entity.HasKey(e => e.NotificationId).HasName("PRIMARY");
 
-            entity.Property(e => e.CreatedAt).HasDefaultValueSql("CURRENT_TIMESTAMP");
-            entity.Property(e => e.IsRead).HasDefaultValueSql("'0'");
+            entity.Property(e => e.CreatedAt).HasDefaultValueSql("GETDATE()");
+            entity.Property(e => e.IsRead).HasDefaultValueSql("0");
 
             entity.HasOne(d => d.Task).WithMany(p => p.Notifications)
                 .OnDelete(DeleteBehavior.SetNull)
@@ -87,7 +87,7 @@ public partial class ApplicationDbContext : DbContext
         {
             entity.HasKey(e => e.OrgId).HasName("PRIMARY");
 
-            entity.Property(e => e.CreatedAt).HasDefaultValueSql("CURRENT_TIMESTAMP");
+            entity.Property(e => e.CreatedAt).HasDefaultValueSql("GETDATE()");
 
             entity.HasOne(d => d.ParentOrg).WithMany(p => p.InverseParentOrg)
                 .OnDelete(DeleteBehavior.SetNull)
@@ -98,7 +98,7 @@ public partial class ApplicationDbContext : DbContext
         {
             entity.HasKey(e => e.PeriodId).HasName("PRIMARY");
 
-            entity.Property(e => e.CreatedAt).HasDefaultValueSql("CURRENT_TIMESTAMP");
+            entity.Property(e => e.CreatedAt).HasDefaultValueSql("GETDATE()");
         });
 
         modelBuilder.Entity<Position>(entity =>
@@ -110,10 +110,10 @@ public partial class ApplicationDbContext : DbContext
         {
             entity.HasKey(e => e.ProgressId).HasName("PRIMARY");
 
-            entity.Property(e => e.PercentageComplete).HasDefaultValueSql("'0'");
+            entity.Property(e => e.PercentageComplete).HasDefaultValueSql("0");
             entity.Property(e => e.UpdatedAt)
                 .ValueGeneratedOnAddOrUpdate()
-                .HasDefaultValueSql("CURRENT_TIMESTAMP");
+                .HasDefaultValueSql("GETDATE()");
 
             entity.HasOne(d => d.Period).WithMany(p => p.Progresses)
                 .OnDelete(DeleteBehavior.SetNull)
@@ -130,12 +130,12 @@ public partial class ApplicationDbContext : DbContext
         {
             entity.HasKey(e => e.Reminderid).HasName("PRIMARY");
 
-            entity.Property(e => e.Createdat).HasDefaultValueSql("CURRENT_TIMESTAMP");
-            entity.Property(e => e.Isauto).HasDefaultValueSql("'0'");
-            entity.Property(e => e.Isnotified).HasDefaultValueSql("'0'");
+            entity.Property(e => e.Createdat).HasDefaultValueSql("GETDATE()");
+            entity.Property(e => e.Isauto).HasDefaultValueSql("0");
+            entity.Property(e => e.Isnotified).HasDefaultValueSql("0");
             entity.Property(e => e.Triggertime)
                 .ValueGeneratedOnAddOrUpdate()
-                .HasDefaultValueSql("CURRENT_TIMESTAMP");
+                .HasDefaultValueSql("GETDATE()");
 
             entity.HasOne(d => d.CreatedbyNavigation).WithMany(p => p.Reminders).HasConstraintName("reminder_ibfk_3");
 
@@ -161,7 +161,7 @@ public partial class ApplicationDbContext : DbContext
         {
             entity.HasKey(e => e.ReportId).HasName("PRIMARY");
 
-            entity.Property(e => e.CreatedAt).HasDefaultValueSql("CURRENT_TIMESTAMP");
+            entity.Property(e => e.CreatedAt).HasDefaultValueSql("GETDATE()");
 
             entity.HasOne(d => d.CreatedByNavigation).WithMany(p => p.Reportsummaries)
                 .OnDelete(DeleteBehavior.SetNull)
@@ -184,15 +184,15 @@ public partial class ApplicationDbContext : DbContext
         {
             entity.HasKey(e => e.Roleid).HasName("PRIMARY");
 
-            entity.Property(e => e.Createdat).HasDefaultValueSql("CURRENT_TIMESTAMP");
+            entity.Property(e => e.Createdat).HasDefaultValueSql("GETDATE()");
         });
 
         modelBuilder.Entity<Task>(entity =>
         {
             entity.HasKey(e => e.TaskId).HasName("PRIMARY");
 
-            entity.Property(e => e.CreatedAt).HasDefaultValueSql("CURRENT_TIMESTAMP");
-            entity.Property(e => e.Percentagecomplete).HasDefaultValueSql("'0'");
+            entity.Property(e => e.CreatedAt).HasDefaultValueSql("GETDATE()");
+            entity.Property(e => e.Percentagecomplete).HasDefaultValueSql("0");
             entity.Property(e => e.Priority).HasDefaultValueSql("'medium'");
             entity.Property(e => e.Status).HasDefaultValueSql("'pending'");
 
@@ -276,7 +276,7 @@ public partial class ApplicationDbContext : DbContext
         {
             entity.HasKey(e => e.FileId).HasName("PRIMARY");
 
-            entity.Property(e => e.UploadedAt).HasDefaultValueSql("CURRENT_TIMESTAMP");
+            entity.Property(e => e.UploadedAt).HasDefaultValueSql("GETDATE()");
 
             entity.HasOne(d => d.UploadedByNavigation).WithMany(p => p.Uploadfiles)
                 .OnDelete(DeleteBehavior.SetNull)
@@ -287,8 +287,8 @@ public partial class ApplicationDbContext : DbContext
         {
             entity.HasKey(e => e.UserId).HasName("PRIMARY");
 
-            entity.Property(e => e.CreatedAt).HasDefaultValueSql("CURRENT_TIMESTAMP");
-            entity.Property(e => e.Role).HasDefaultValueSql("'0'");
+            entity.Property(e => e.CreatedAt).HasDefaultValueSql("GETDATE()");
+            entity.Property(e => e.Role).HasDefaultValueSql("0");
 
             entity.HasOne(d => d.Org).WithMany(p => p.Users).HasConstraintName("user_ibfk_2");
 
@@ -307,7 +307,7 @@ public partial class ApplicationDbContext : DbContext
         {
             entity.HasKey(e => e.Id).HasName("PRIMARY");
 
-            entity.Property(e => e.Createdat).HasDefaultValueSql("CURRENT_TIMESTAMP");
+            entity.Property(e => e.Createdat).HasDefaultValueSql("GETDATE()");
 
             entity.HasOne(d => d.Role).WithMany(p => p.Userroles).HasConstraintName("fk_userrole_role");
 

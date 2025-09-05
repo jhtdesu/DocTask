@@ -16,4 +16,11 @@ public class TaskController : ControllerBase
     {
         _taskService = taskService;
     }
+
+    [HttpGet]
+    public async Task<IActionResult> GetAllTasks()
+    {
+        var tasks = await _taskService.GetAllTasks();
+        return Ok(tasks);
+    }
 }
