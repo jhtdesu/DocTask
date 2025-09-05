@@ -14,11 +14,4 @@ public class TaskService : ITaskService
     {
         _taskRepository = taskRepository;
     }
-
-
-    public List<TaskDto> GetAll()
-    {
-        throw new NotFoundException();
-        return _taskRepository.GetAll().Select(t => t.ToTaskDto()).ToList();
-    }
 }

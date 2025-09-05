@@ -16,16 +16,4 @@ public class TaskController : ControllerBase
     {
         _taskService = taskService;
     }
-
-    [HttpGet]
-    public IActionResult getAll()
-    {
-        var result = _taskService.GetAll();
-
-        return Ok(new ApiResponse<List<TaskDto>>
-        {
-            Data = result,
-            Message = "Success",
-        });
-    }
 }
