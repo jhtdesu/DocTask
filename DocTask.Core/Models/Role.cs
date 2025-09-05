@@ -19,7 +19,7 @@ public partial class Role
     [Column("description", TypeName = "text")]
     public string? Description { get; set; }
 
-    [Column("createdat", TypeName = "timestamp")]
+    [Column("createdat")]
     public DateTime Createdat { get; set; }
 
     [InverseProperty("Role")]

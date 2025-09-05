@@ -26,13 +26,14 @@ public partial class Progress
     [Column("comment", TypeName = "text")]
     public string? Comment { get; set; }
 
-    [Column(TypeName = "enum('not_started','in_progress','completed')")]
+    [Column("status")]
+    [StringLength(50)]
     public string? Status { get; set; }
 
     [Column("updatedBy")]
-    public int? UpdatedBy { get; set; }
+    public string? UpdatedBy { get; set; }
 
-    [Column("updatedAt", TypeName = "timestamp")]
+    [Column("updatedAt")]
     public DateTime UpdatedAt { get; set; }
 
     [Column("fileName")]
@@ -62,5 +63,5 @@ public partial class Progress
 
     [ForeignKey("UpdatedBy")]
     [InverseProperty("Progresses")]
-    public virtual User? UpdatedByNavigation { get; set; }
+    public virtual ApplicationUser? UpdatedByNavigation { get; set; }
 }

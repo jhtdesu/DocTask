@@ -15,5 +15,5 @@ public partial class Position
     public string PositionName { get; set; } = null!;
 
     [InverseProperty("Position")]
-    public virtual ICollection<User> Users { get; set; } = new List<User>();
+    public virtual ICollection<ApplicationUser> Users { get; set; } = new List<ApplicationUser>();
 }

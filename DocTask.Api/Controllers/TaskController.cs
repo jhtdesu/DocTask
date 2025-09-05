@@ -2,6 +2,7 @@ using DocTask.Core.DTOs.ApiResponses;
 using DocTask.Core.Dtos.Tasks;
 using DocTask.Core.Interfaces.Services;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
 
 namespace DockTask.Api.Controllers;
 
@@ -15,5 +16,13 @@ public class TaskController : ControllerBase
     public TaskController(ITaskService taskService)
     {
         _taskService = taskService;
+    }
+
+    [Authorize]
+    [HttpGet]
+    public async Task<IActionResult> GetAllTasks()
+    {
+        var tasks = await _taskService.GetAllTasks();
+        return Ok(tasks);
     }
 }

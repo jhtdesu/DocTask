@@ -14,7 +14,7 @@ public partial class Notification
     public int NotificationId { get; set; }
 
     [Column("userId")]
-    public int? UserId { get; set; }
+    public string? UserId { get; set; }
 
     [Column("taskId")]
     public int? TaskId { get; set; }
@@ -25,7 +25,7 @@ public partial class Notification
     [Column("isRead")]
     public bool? IsRead { get; set; }
 
-    [Column("createdAt", TypeName = "timestamp")]
+    [Column("createdAt")]
     public DateTime CreatedAt { get; set; }
 
     [InverseProperty("Notification")]
@@ -37,5 +37,5 @@ public partial class Notification
 
     [ForeignKey("UserId")]
     [InverseProperty("Notifications")]
-    public virtual User? User { get; set; }
+    public virtual ApplicationUser? User { get; set; }
 }

@@ -25,10 +25,10 @@ public partial class Task
     public string? Description { get; set; }
 
     [Column("assignerId")]
-    public int? AssignerId { get; set; }
+    public string? AssignerId { get; set; }
 
     [Column("assigneeId")]
-    public int? AssigneeId { get; set; }
+    public string? AssigneeId { get; set; }
 
     [Column("orgId")]
     public int? OrgId { get; set; }
@@ -39,19 +39,21 @@ public partial class Task
     [Column("attachedFile")]
     public int? AttachedFile { get; set; }
 
-    [Column("status", TypeName = "enum('pending','in_progress','completed','delayed')")]
+    [Column("status")]
+    [StringLength(50)]
     public string? Status { get; set; }
 
-    [Column("priority", TypeName = "enum('low','medium','high')")]
+    [Column("priority")]
+    [StringLength(50)]
     public string? Priority { get; set; }
 
-    [Column("startDate", TypeName = "date")]
+    [Column("startDate")]
     public DateTime? StartDate { get; set; }
 
-    [Column("dueDate", TypeName = "date")]
+    [Column("dueDate")]
     public DateTime? DueDate { get; set; }
 
-    [Column("createdAt", TypeName = "timestamp")]
+    [Column("createdAt")]
     public DateTime CreatedAt { get; set; }
 
     [Column("unitId")]
@@ -68,11 +70,11 @@ public partial class Task
 
     [ForeignKey("AssigneeId")]
     [InverseProperty("TaskAssignees")]
-    public virtual User? Assignee { get; set; }
+    public virtual ApplicationUser? Assignee { get; set; }
 
     [ForeignKey("AssignerId")]
     [InverseProperty("TaskAssigners")]
-    public virtual User? Assigner { get; set; }
+    public virtual ApplicationUser? Assigner { get; set; }
 
     [ForeignKey("AttachedFile")]
     [InverseProperty("Tasks")]
@@ -107,5 +109,5 @@ public partial class Task
 
     [ForeignKey("TaskId")]
     [InverseProperty("Tasks")]
-    public virtual ICollection<User> Users { get; set; } = new List<User>();
+    public virtual ICollection<ApplicationUser> Users { get; set; } = new List<ApplicationUser>();
 }

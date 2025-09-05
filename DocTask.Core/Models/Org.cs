@@ -19,7 +19,7 @@ public partial class Org
     [Column("parentOrgId")]
     public int? ParentOrgId { get; set; }
 
-    [Column("createdAt", TypeName = "timestamp")]
+    [Column("createdAt")]
     public DateTime CreatedAt { get; set; }
 
     [InverseProperty("ParentOrg")]
@@ -36,5 +36,5 @@ public partial class Org
     public virtual ICollection<Unit> Units { get; set; } = new List<Unit>();
 
     [InverseProperty("Org")]
-    public virtual ICollection<User> Users { get; set; } = new List<User>();
+    public virtual ICollection<ApplicationUser> Users { get; set; } = new List<ApplicationUser>();
 }
