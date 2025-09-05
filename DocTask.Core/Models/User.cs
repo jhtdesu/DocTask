@@ -47,14 +47,14 @@ public partial class User
     [Column("userParent")]
     public int? UserParent { get; set; }
 
-    [Column("createdAt", TypeName = "timestamp")]
+    [Column("createdAt")]
     public DateTime CreatedAt { get; set; }
 
     [Column("refreshtoken")]
     [StringLength(255)]
     public string? Refreshtoken { get; set; }
 
-    [Column("refreshtokenexpirytime", TypeName = "datetime")]
+    [Column("refreshtokenexpirytime")]
     public DateTime? Refreshtokenexpirytime { get; set; }
 
     [Column("role")]

@@ -19,7 +19,7 @@ public partial class Org
     [Column("parentOrgId")]
     public int? ParentOrgId { get; set; }
 
-    [Column("createdAt", TypeName = "timestamp")]
+    [Column("createdAt")]
     public DateTime CreatedAt { get; set; }
 
     [InverseProperty("ParentOrg")]

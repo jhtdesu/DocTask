@@ -20,7 +20,8 @@ public partial class Unit
     [StringLength(255)]
     public string UnitName { get; set; } = null!;
 
-    [Column("type", TypeName = "enum('official','virtual')")]
+    [Column("type")]
+    [StringLength(50)]
     public string? Type { get; set; }
 
     [Column("unitParent")]

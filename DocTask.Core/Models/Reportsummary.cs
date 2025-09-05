@@ -30,7 +30,7 @@ public partial class Reportsummary
     [Column("reportFile")]
     public int? ReportFile { get; set; }
 
-    [Column("createdAt", TypeName = "timestamp")]
+    [Column("createdAt")]
     public DateTime CreatedAt { get; set; }
 
     [ForeignKey("CreatedBy")]

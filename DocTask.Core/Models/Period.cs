@@ -14,13 +14,13 @@ public partial class Period
     [StringLength(50)]
     public string PeriodName { get; set; } = null!;
 
-    [Column("startDate", TypeName = "date")]
+    [Column("startDate")]
     public DateTime StartDate { get; set; }
 
-    [Column("endDate", TypeName = "date")]
+    [Column("endDate")]
     public DateTime EndDate { get; set; }
 
-    [Column("createdAt", TypeName = "timestamp")]
+    [Column("createdAt")]
     public DateTime CreatedAt { get; set; }
 
     [InverseProperty("Period")]

@@ -19,7 +19,7 @@ public partial class Userrole
     [Column("roleid")]
     public int Roleid { get; set; }
 
-    [Column("createdat", TypeName = "timestamp")]
+    [Column("createdat")]
     public DateTime Createdat { get; set; }
 
     [ForeignKey("Roleid")]

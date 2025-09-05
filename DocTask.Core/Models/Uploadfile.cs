@@ -23,7 +23,7 @@ public partial class Uploadfile
     [Column("uploadedBy")]
     public int? UploadedBy { get; set; }
 
-    [Column("uploadedAt", TypeName = "timestamp")]
+    [Column("uploadedAt")]
     public DateTime UploadedAt { get; set; }
 
     [InverseProperty("ReportFileNavigation")]

@@ -39,19 +39,21 @@ public partial class Task
     [Column("attachedFile")]
     public int? AttachedFile { get; set; }
 
-    [Column("status", TypeName = "enum('pending','in_progress','completed','delayed')")]
+    [Column("status")]
+    [StringLength(50)]
     public string? Status { get; set; }
 
-    [Column("priority", TypeName = "enum('low','medium','high')")]
+    [Column("priority")]
+    [StringLength(50)]
     public string? Priority { get; set; }
 
-    [Column("startDate", TypeName = "date")]
+    [Column("startDate")]
     public DateTime? StartDate { get; set; }
 
-    [Column("dueDate", TypeName = "date")]
+    [Column("dueDate")]
     public DateTime? DueDate { get; set; }
 
-    [Column("createdAt", TypeName = "timestamp")]
+    [Column("createdAt")]
     public DateTime CreatedAt { get; set; }
 
     [Column("unitId")]

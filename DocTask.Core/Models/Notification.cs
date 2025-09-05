@@ -25,7 +25,7 @@ public partial class Notification
     [Column("isRead")]
     public bool? IsRead { get; set; }
 
-    [Column("createdAt", TypeName = "timestamp")]
+    [Column("createdAt")]
     public DateTime CreatedAt { get; set; }
 
     [InverseProperty("Notification")]

@@ -10,7 +10,8 @@ public partial class Frequency
     [Column("frequencyId")]
     public int FrequencyId { get; set; }
 
-    [Column("frequencyType", TypeName = "enum('daily','weekly','monthly','custom')")]
+    [Column("frequencyType")]
+    [StringLength(50)]
     public string FrequencyType { get; set; } = null!;
 
     [Column("frequencyDetail")]
@@ -20,7 +21,7 @@ public partial class Frequency
     [Column("intervalValue")]
     public int IntervalValue { get; set; }
 
-    [Column("createdAt", TypeName = "timestamp")]
+    [Column("createdAt")]
     public DateTime CreatedAt { get; set; }
 
     [InverseProperty("Frequency")]

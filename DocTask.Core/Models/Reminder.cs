@@ -24,7 +24,7 @@ public partial class Reminder
     [Column("message", TypeName = "text")]
     public string Message { get; set; } = null!;
 
-    [Column("triggertime", TypeName = "timestamp")]
+    [Column("triggertime")]
     public DateTime Triggertime { get; set; }
 
     [Column("isauto")]
@@ -33,13 +33,13 @@ public partial class Reminder
     [Column("createdby")]
     public int? Createdby { get; set; }
 
-    [Column("createdat", TypeName = "timestamp")]
+    [Column("createdat")]
     public DateTime Createdat { get; set; }
 
     [Column("isnotified")]
     public bool? Isnotified { get; set; }
 
-    [Column("notifiedat", TypeName = "timestamp")]
+    [Column("notifiedat")]
     public DateTime? Notifiedat { get; set; }
 
     [Column("notificationid")]
