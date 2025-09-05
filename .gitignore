@@ -6,3 +6,5 @@ obj/
 riderModule.iml
 /_ReSharper.Caches/
 DocTask.Data/Migrations/
+DocTask.Api/appsettings.json
+.DS_Store
