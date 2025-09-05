@@ -97,9 +97,10 @@ public class AuthService : IAuthService
             FullName = request.FullName,
             PhoneNumber = request.PhoneNumber,
             Role = "User", // Default role
-            OrgId = request.OrgId,
-            UnitId = request.UnitId,
-            PositionId = null, // Set to null to avoid foreign key constraint issues
+            // Treat 0 as not provided for optional FKs
+            OrgId = request.OrgId.HasValue && request.OrgId.Value > 0 ? request.OrgId : null,
+            UnitId = request.UnitId.HasValue && request.UnitId.Value > 0 ? request.UnitId : null,
+            PositionId = request.PositionId.HasValue && request.PositionId.Value > 0 ? request.PositionId : null,
             PositionName = request.PositionName,
             CreatedAt = DateTime.UtcNow
         };
