@@ -25,7 +25,7 @@ public partial class Reportsummary
     public string? Summary { get; set; }
 
     [Column("createdBy")]
-    public int? CreatedBy { get; set; }
+    public string? CreatedBy { get; set; }
 
     [Column("reportFile")]
     public int? ReportFile { get; set; }
@@ -35,7 +35,7 @@ public partial class Reportsummary
 
     [ForeignKey("CreatedBy")]
     [InverseProperty("Reportsummaries")]
-    public virtual User? CreatedByNavigation { get; set; }
+    public virtual ApplicationUser? CreatedByNavigation { get; set; }
 
     [ForeignKey("PeriodId")]
     [InverseProperty("Reportsummaries")]

@@ -1,5 +1,6 @@
 using DocTask.Core.Dtos.Auth;
 using DocTask.Core.Interfaces.Services;
+using DocTask.Core.Models;
 using DocTask.Data;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -14,14 +15,14 @@ namespace DocTask.Service.Services;
 
 public class AuthService : IAuthService
 {
-    private readonly UserManager<IdentityUser> _userManager;
-    private readonly SignInManager<IdentityUser> _signInManager;
+    private readonly UserManager<ApplicationUser> _userManager;
+    private readonly SignInManager<ApplicationUser> _signInManager;
     private readonly ApplicationDbContext _context;
     private readonly IConfiguration _configuration;
 
     public AuthService(
-        UserManager<IdentityUser> userManager,
-        SignInManager<IdentityUser> signInManager,
+        UserManager<ApplicationUser> userManager,
+        SignInManager<ApplicationUser> signInManager,
         ApplicationDbContext context,
         IConfiguration configuration)
     {
@@ -45,18 +46,12 @@ public class AuthService : IAuthService
             throw new UnauthorizedAccessException("Invalid email or password");
         }
 
-        var dbUser = await _context.Users.FirstOrDefaultAsync(u => u.Email == request.Email);
-        if (dbUser == null)
-        {
-            throw new UnauthorizedAccessException("User not found in database");
-        }
-
-        var token = await GenerateJwtTokenAsync(user);
+        var token = GenerateJwtToken(user);
         var refreshToken = GenerateRefreshToken();
 
         // Update refresh token in database
-        dbUser.Refreshtoken = refreshToken;
-        dbUser.Refreshtokenexpirytime = DateTime.UtcNow.AddDays(7);
+        user.Refreshtoken = refreshToken;
+        user.Refreshtokenexpirytime = DateTime.UtcNow.AddDays(7);
         await _context.SaveChangesAsync();
 
         return new AuthResponse
@@ -66,16 +61,16 @@ public class AuthService : IAuthService
             Expiration = DateTime.UtcNow.AddMinutes(60),
             User = new UserInfo
             {
-                UserId = dbUser.UserId,
-                Username = dbUser.Username,
-                Email = dbUser.Email ?? string.Empty,
-                FullName = dbUser.FullName,
-                PhoneNumber = dbUser.PhoneNumber,
-                Role = dbUser.Role,
-                OrgId = dbUser.OrgId,
-                UnitId = dbUser.UnitId,
-                PositionId = dbUser.PositionId,
-                PositionName = dbUser.PositionName
+                UserId = user.Id,
+                Username = user.UserName ?? string.Empty,
+                Email = user.Email ?? string.Empty,
+                FullName = user.FullName,
+                PhoneNumber = user.PhoneNumber,
+                Role = user.Role,
+                OrgId = user.OrgId,
+                UnitId = user.UnitId,
+                PositionId = user.PositionId,
+                PositionName = user.PositionName
             }
         };
     }
@@ -88,33 +83,19 @@ public class AuthService : IAuthService
             throw new InvalidOperationException("User with this email already exists");
         }
 
-        var existingUsername = await _context.Users.FirstOrDefaultAsync(u => u.Username == request.Username);
+        var existingUsername = await _userManager.FindByNameAsync(request.Username);
         if (existingUsername != null)
         {
             throw new InvalidOperationException("Username already exists");
         }
 
-        var identityUser = new IdentityUser
+        var applicationUser = new ApplicationUser
         {
             UserName = request.Username,
             Email = request.Email,
-            EmailConfirmed = true
-        };
-
-        var result = await _userManager.CreateAsync(identityUser, request.Password);
-        if (!result.Succeeded)
-        {
-            throw new InvalidOperationException($"User creation failed: {string.Join(", ", result.Errors.Select(e => e.Description))}");
-        }
-
-        // Create user in our custom User table
-        var dbUser = new DocTask.Core.Models.User
-        {
-            Username = request.Username,
-            Email = request.Email,
+            EmailConfirmed = true,
             FullName = request.FullName,
             PhoneNumber = request.PhoneNumber,
-            Password = HashPassword(request.Password), // Store hashed password for compatibility
             Role = "User", // Default role
             OrgId = request.OrgId,
             UnitId = request.UnitId,
@@ -123,15 +104,18 @@ public class AuthService : IAuthService
             CreatedAt = DateTime.UtcNow
         };
 
-        _context.Users.Add(dbUser);
-        await _context.SaveChangesAsync();
+        var result = await _userManager.CreateAsync(applicationUser, request.Password);
+        if (!result.Succeeded)
+        {
+            throw new InvalidOperationException($"User creation failed: {string.Join(", ", result.Errors.Select(e => e.Description))}");
+        }
 
-        var token = await GenerateJwtTokenAsync(identityUser);
+        var token = GenerateJwtToken(applicationUser);
         var refreshToken = GenerateRefreshToken();
 
         // Update refresh token in database
-        dbUser.Refreshtoken = refreshToken;
-        dbUser.Refreshtokenexpirytime = DateTime.UtcNow.AddDays(7);
+        applicationUser.Refreshtoken = refreshToken;
+        applicationUser.Refreshtokenexpirytime = DateTime.UtcNow.AddDays(7);
         await _context.SaveChangesAsync();
 
         return new AuthResponse
@@ -141,35 +125,29 @@ public class AuthService : IAuthService
             Expiration = DateTime.UtcNow.AddMinutes(60),
             User = new UserInfo
             {
-                UserId = dbUser.UserId,
-                Username = dbUser.Username,
-                Email = dbUser.Email ?? string.Empty,
-                FullName = dbUser.FullName,
-                PhoneNumber = dbUser.PhoneNumber,
-                Role = dbUser.Role,
-                OrgId = dbUser.OrgId,
-                UnitId = dbUser.UnitId,
-                PositionId = dbUser.PositionId,
-                PositionName = dbUser.PositionName
+                UserId = applicationUser.Id,
+                Username = applicationUser.UserName ?? string.Empty,
+                Email = applicationUser.Email ?? string.Empty,
+                FullName = applicationUser.FullName,
+                PhoneNumber = applicationUser.PhoneNumber,
+                Role = applicationUser.Role,
+                OrgId = applicationUser.OrgId,
+                UnitId = applicationUser.UnitId,
+                PositionId = applicationUser.PositionId,
+                PositionName = applicationUser.PositionName
             }
         };
     }
 
     public async Task<AuthResponse> RefreshTokenAsync(string refreshToken)
     {
-        var user = await _context.Users.FirstOrDefaultAsync(u => u.Refreshtoken == refreshToken);
+        var user = await _userManager.Users.FirstOrDefaultAsync(u => u.Refreshtoken == refreshToken);
         if (user == null || user.Refreshtokenexpirytime <= DateTime.UtcNow)
         {
             throw new UnauthorizedAccessException("Invalid or expired refresh token");
         }
 
-        var identityUser = await _userManager.FindByEmailAsync(user.Email);
-        if (identityUser == null)
-        {
-            throw new UnauthorizedAccessException("User not found");
-        }
-
-        var newToken = await GenerateJwtTokenAsync(identityUser);
+        var newToken = GenerateJwtToken(user);
         var newRefreshToken = GenerateRefreshToken();
 
         // Update refresh token in database
@@ -184,8 +162,8 @@ public class AuthService : IAuthService
             Expiration = DateTime.UtcNow.AddMinutes(60),
             User = new UserInfo
             {
-                UserId = user.UserId,
-                Username = user.Username,
+                UserId = user.Id,
+                Username = user.UserName ?? string.Empty,
                 Email = user.Email ?? string.Empty,
                 FullName = user.FullName,
                 PhoneNumber = user.PhoneNumber,
@@ -200,7 +178,7 @@ public class AuthService : IAuthService
 
     public async Task<bool> RevokeTokenAsync(string refreshToken)
     {
-        var user = await _context.Users.FirstOrDefaultAsync(u => u.Refreshtoken == refreshToken);
+        var user = await _userManager.Users.FirstOrDefaultAsync(u => u.Refreshtoken == refreshToken);
         if (user == null)
         {
             return false;
@@ -213,24 +191,19 @@ public class AuthService : IAuthService
         return true;
     }
 
-    private async Task<string> GenerateJwtTokenAsync(IdentityUser user)
+    private string GenerateJwtToken(ApplicationUser user)
     {
         var claims = new List<Claim>
         {
-            new(ClaimTypes.NameIdentifier, user.Id),
-            new(ClaimTypes.Email, user.Email ?? string.Empty),
-            new(ClaimTypes.Name, user.UserName ?? string.Empty),
-            new("jti", Guid.NewGuid().ToString()),
-            new("iat", DateTimeOffset.UtcNow.ToUnixTimeSeconds().ToString(), ClaimValueTypes.Integer64)
+            new Claim(ClaimTypes.NameIdentifier, user.Id),
+            new Claim(ClaimTypes.Email, user.Email ?? string.Empty),
+            new Claim(ClaimTypes.Name, user.UserName ?? string.Empty),
+            new Claim("jti", Guid.NewGuid().ToString()),
+            new Claim("iat", DateTimeOffset.UtcNow.ToUnixTimeSeconds().ToString(), ClaimValueTypes.Integer64),
+            new Claim("UserId", user.Id),
+            new Claim("Role", user.Role),
+            new Claim("FullName", user.FullName)
         };
-
-        var dbUser = await _context.Users.FirstOrDefaultAsync(u => u.Email == user.Email);
-        if (dbUser != null)
-        {
-            claims.Add(new Claim("UserId", dbUser.UserId.ToString()));
-            claims.Add(new Claim("Role", dbUser.Role));
-            claims.Add(new Claim("FullName", dbUser.FullName));
-        }
 
         var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration["Jwt:Key"] ?? ""));
         var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
@@ -253,11 +226,4 @@ public class AuthService : IAuthService
         return Convert.ToBase64String(randomNumber);
     }
 
-    private static string HashPassword(string password)
-    {
-        // Simple hash for compatibility - in production, use proper hashing
-        using var sha256 = SHA256.Create();
-        var hashedBytes = sha256.ComputeHash(Encoding.UTF8.GetBytes(password));
-        return Convert.ToBase64String(hashedBytes);
-    }
 }

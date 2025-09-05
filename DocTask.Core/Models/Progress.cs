@@ -31,7 +31,7 @@ public partial class Progress
     public string? Status { get; set; }
 
     [Column("updatedBy")]
-    public int? UpdatedBy { get; set; }
+    public string? UpdatedBy { get; set; }
 
     [Column("updatedAt")]
     public DateTime UpdatedAt { get; set; }
@@ -63,5 +63,5 @@ public partial class Progress
 
     [ForeignKey("UpdatedBy")]
     [InverseProperty("Progresses")]
-    public virtual User? UpdatedByNavigation { get; set; }
+    public virtual ApplicationUser? UpdatedByNavigation { get; set; }
 }

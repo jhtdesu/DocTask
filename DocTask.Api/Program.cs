@@ -1,6 +1,7 @@
 using DockTask.Api.Configurations;
 using DockTask.Api.Handlers;
 using DocTask.Core.Interfaces.Services;
+using DocTask.Core.Models;
 using DocTask.Data;
 using DocTask.Service.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -24,7 +25,7 @@ builder.Services.AddDbContext<ApplicationDbContext>(options => {
 });
 
 // Identity
-builder.Services.AddIdentity<IdentityUser, IdentityRole>(options =>
+builder.Services.AddIdentity<ApplicationUser, IdentityRole>(options =>
 {
     options.Password.RequireDigit = true;
     options.Password.RequireLowercase = true;

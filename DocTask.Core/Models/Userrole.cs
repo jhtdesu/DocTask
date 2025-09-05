@@ -14,7 +14,7 @@ public partial class Userrole
     public int Id { get; set; }
 
     [Column("userid")]
-    public int Userid { get; set; }
+    public string Userid { get; set; } = null!;
 
     [Column("roleid")]
     public int Roleid { get; set; }
@@ -28,5 +28,5 @@ public partial class Userrole
 
     [ForeignKey("Userid")]
     [InverseProperty("Userroles")]
-    public virtual User User { get; set; } = null!;
+    public virtual ApplicationUser User { get; set; } = null!;
 }

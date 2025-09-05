@@ -48,5 +48,5 @@ public partial class Unit
     public virtual ICollection<Unituser> Unitusers { get; set; } = new List<Unituser>();
 
     [InverseProperty("Unit")]
-    public virtual ICollection<User> Users { get; set; } = new List<User>();
+    public virtual ICollection<ApplicationUser> Users { get; set; } = new List<ApplicationUser>();
 }

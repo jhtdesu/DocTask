@@ -31,7 +31,7 @@ public partial class Reminder
     public bool? Isauto { get; set; }
 
     [Column("createdby")]
-    public int? Createdby { get; set; }
+    public string? Createdby { get; set; }
 
     [Column("createdat")]
     public DateTime Createdat { get; set; }
@@ -47,7 +47,7 @@ public partial class Reminder
 
     [ForeignKey("Createdby")]
     [InverseProperty("Reminders")]
-    public virtual User? CreatedbyNavigation { get; set; }
+    public virtual ApplicationUser? CreatedbyNavigation { get; set; }
 
     [ForeignKey("Notificationid")]
     [InverseProperty("Reminders")]

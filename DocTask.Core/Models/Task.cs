@@ -25,10 +25,10 @@ public partial class Task
     public string? Description { get; set; }
 
     [Column("assignerId")]
-    public int? AssignerId { get; set; }
+    public string? AssignerId { get; set; }
 
     [Column("assigneeId")]
-    public int? AssigneeId { get; set; }
+    public string? AssigneeId { get; set; }
 
     [Column("orgId")]
     public int? OrgId { get; set; }
@@ -70,11 +70,11 @@ public partial class Task
 
     [ForeignKey("AssigneeId")]
     [InverseProperty("TaskAssignees")]
-    public virtual User? Assignee { get; set; }
+    public virtual ApplicationUser? Assignee { get; set; }
 
     [ForeignKey("AssignerId")]
     [InverseProperty("TaskAssigners")]
-    public virtual User? Assigner { get; set; }
+    public virtual ApplicationUser? Assigner { get; set; }
 
     [ForeignKey("AttachedFile")]
     [InverseProperty("Tasks")]
@@ -109,5 +109,5 @@ public partial class Task
 
     [ForeignKey("TaskId")]
     [InverseProperty("Tasks")]
-    public virtual ICollection<User> Users { get; set; } = new List<User>();
+    public virtual ICollection<ApplicationUser> Users { get; set; } = new List<ApplicationUser>();
 }

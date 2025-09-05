@@ -17,7 +17,7 @@ public partial class Unituser
     public int UnitId { get; set; }
 
     [Column("userId")]
-    public int UserId { get; set; }
+    public string UserId { get; set; } = null!;
 
     [Column("position", TypeName = "text")]
     public string? Position { get; set; }
@@ -31,8 +31,8 @@ public partial class Unituser
 
     [ForeignKey("UserId")]
     [InverseProperty("Unitusers")]
-    public virtual User User { get; set; } = null!;
+    public virtual ApplicationUser User { get; set; } = null!;
 
     [InverseProperty("UnitUser")]
-    public virtual ICollection<User> Users { get; set; } = new List<User>();
+    public virtual ICollection<ApplicationUser> Users { get; set; } = new List<ApplicationUser>();
 }

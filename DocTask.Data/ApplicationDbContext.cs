@@ -5,7 +5,7 @@ using Task = DocTask.Core.Models.Task;
 
 namespace DocTask.Data;
 
-public partial class ApplicationDbContext : IdentityDbContext
+public partial class ApplicationDbContext : IdentityDbContext<ApplicationUser>
 {
     public ApplicationDbContext()
     {
@@ -48,8 +48,6 @@ public partial class ApplicationDbContext : IdentityDbContext
 
     public virtual DbSet<Uploadfile> Uploadfiles { get; set; }
 
-    public new virtual DbSet<User> Users { get; set; }
-
     public virtual DbSet<Userrole> Userroles { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -57,7 +55,7 @@ public partial class ApplicationDbContext : IdentityDbContext
         base.OnModelCreating(modelBuilder);
         
         // Configure Identity tables to use custom names
-        modelBuilder.Entity<Microsoft.AspNetCore.Identity.IdentityUser>().ToTable("AspNetUsers");
+        modelBuilder.Entity<ApplicationUser>().ToTable("AspNetUsers");
         modelBuilder.Entity<Microsoft.AspNetCore.Identity.IdentityRole>().ToTable("AspNetRoles");
         modelBuilder.Entity<Microsoft.AspNetCore.Identity.IdentityUserRole<string>>().ToTable("AspNetUserRoles");
         modelBuilder.Entity<Microsoft.AspNetCore.Identity.IdentityUserClaim<string>>().ToTable("AspNetUserClaims");
@@ -67,60 +65,60 @@ public partial class ApplicationDbContext : IdentityDbContext
         
         modelBuilder.Entity<Frequency>(entity =>
         {
-            entity.HasKey(e => e.FrequencyId).HasName("PRIMARY");
+            entity.HasKey(e => e.FrequencyId).HasName("PK_Frequency");
 
             entity.Property(e => e.CreatedAt).HasDefaultValueSql("GETDATE()");
         });
 
         modelBuilder.Entity<FrequencyDetail>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("PRIMARY");
+            entity.HasKey(e => e.Id).HasName("PK_FrequencyDetail");
 
             entity.HasOne(d => d.Frequency).WithMany(p => p.FrequencyDetails).HasConstraintName("fk_frequency_detail_frequency");
         });
 
         modelBuilder.Entity<Notification>(entity =>
         {
-            entity.HasKey(e => e.NotificationId).HasName("PRIMARY");
+            entity.HasKey(e => e.NotificationId).HasName("PK_Notification");
 
             entity.Property(e => e.CreatedAt).HasDefaultValueSql("GETDATE()");
             entity.Property(e => e.IsRead).HasDefaultValueSql("0");
 
             entity.HasOne(d => d.Task).WithMany(p => p.Notifications)
-                .OnDelete(DeleteBehavior.SetNull)
+                .OnDelete(DeleteBehavior.NoAction)
                 .HasConstraintName("fkNotificationTask");
 
             entity.HasOne(d => d.User).WithMany(p => p.Notifications)
-                .OnDelete(DeleteBehavior.SetNull)
+                .OnDelete(DeleteBehavior.NoAction)
                 .HasConstraintName("fkNotificationUser");
         });
 
         modelBuilder.Entity<Core.Models.Org>(entity =>
         {
-            entity.HasKey(e => e.OrgId).HasName("PRIMARY");
+            entity.HasKey(e => e.OrgId).HasName("PK_Org");
 
             entity.Property(e => e.CreatedAt).HasDefaultValueSql("GETDATE()");
 
             entity.HasOne(d => d.ParentOrg).WithMany(p => p.InverseParentOrg)
-                .OnDelete(DeleteBehavior.SetNull)
+                .OnDelete(DeleteBehavior.NoAction)
                 .HasConstraintName("fkOrgParent");
         });
 
         modelBuilder.Entity<Period>(entity =>
         {
-            entity.HasKey(e => e.PeriodId).HasName("PRIMARY");
+            entity.HasKey(e => e.PeriodId).HasName("PK_Period");
 
             entity.Property(e => e.CreatedAt).HasDefaultValueSql("GETDATE()");
         });
 
         modelBuilder.Entity<Position>(entity =>
         {
-            entity.HasKey(e => e.PositionId).HasName("PRIMARY");
+            entity.HasKey(e => e.PositionId).HasName("PK_Position");
         });
 
         modelBuilder.Entity<Progress>(entity =>
         {
-            entity.HasKey(e => e.ProgressId).HasName("PRIMARY");
+            entity.HasKey(e => e.ProgressId).HasName("PK_Progress");
 
             entity.Property(e => e.PercentageComplete).HasDefaultValueSql("0");
             entity.Property(e => e.UpdatedAt)
@@ -128,19 +126,19 @@ public partial class ApplicationDbContext : IdentityDbContext
                 .HasDefaultValueSql("GETDATE()");
 
             entity.HasOne(d => d.Period).WithMany(p => p.Progresses)
-                .OnDelete(DeleteBehavior.SetNull)
+                .OnDelete(DeleteBehavior.NoAction)
                 .HasConstraintName("fkProgressPeriod");
 
             entity.HasOne(d => d.Task).WithMany(p => p.Progresses).HasConstraintName("fkProgressTask");
 
             entity.HasOne(d => d.UpdatedByNavigation).WithMany(p => p.Progresses)
-                .OnDelete(DeleteBehavior.SetNull)
+                .OnDelete(DeleteBehavior.NoAction)
                 .HasConstraintName("fkProgressUpdatedBy");
         });
 
         modelBuilder.Entity<Reminder>(entity =>
         {
-            entity.HasKey(e => e.Reminderid).HasName("PRIMARY");
+            entity.HasKey(e => e.Reminderid).HasName("PK_Reminder");
 
             entity.Property(e => e.Createdat).HasDefaultValueSql("GETDATE()");
             entity.Property(e => e.Isauto).HasDefaultValueSql("0");
@@ -156,13 +154,13 @@ public partial class ApplicationDbContext : IdentityDbContext
             entity.HasOne(d => d.Period).WithMany(p => p.Reminders).HasConstraintName("reminder_ibfk_2");
 
             entity.HasOne(d => d.Task).WithMany(p => p.Reminders)
-                .OnDelete(DeleteBehavior.ClientSetNull)
+                .OnDelete(DeleteBehavior.NoAction)
                 .HasConstraintName("reminder_ibfk_1");
         });
 
         modelBuilder.Entity<Reminderunit>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("PRIMARY");
+            entity.HasKey(e => e.Id).HasName("PK_Reminderunit");
 
             entity.HasOne(d => d.Reminder).WithMany(p => p.Reminderunits).HasConstraintName("fk_reminder");
 
@@ -171,37 +169,37 @@ public partial class ApplicationDbContext : IdentityDbContext
 
         modelBuilder.Entity<Reportsummary>(entity =>
         {
-            entity.HasKey(e => e.ReportId).HasName("PRIMARY");
+            entity.HasKey(e => e.ReportId).HasName("PK_Reportsummary");
 
             entity.Property(e => e.CreatedAt).HasDefaultValueSql("GETDATE()");
 
             entity.HasOne(d => d.CreatedByNavigation).WithMany(p => p.Reportsummaries)
-                .OnDelete(DeleteBehavior.SetNull)
+                .OnDelete(DeleteBehavior.NoAction)
                 .HasConstraintName("fkReportCreatedBy");
 
             entity.HasOne(d => d.Period).WithMany(p => p.Reportsummaries)
-                .OnDelete(DeleteBehavior.SetNull)
+                .OnDelete(DeleteBehavior.NoAction)
                 .HasConstraintName("fkReportPeriod");
 
             entity.HasOne(d => d.ReportFileNavigation).WithMany(p => p.Reportsummaries)
-                .OnDelete(DeleteBehavior.SetNull)
+                .OnDelete(DeleteBehavior.NoAction)
                 .HasConstraintName("fkReportFile");
 
             entity.HasOne(d => d.Task).WithMany(p => p.Reportsummaries)
-                .OnDelete(DeleteBehavior.SetNull)
+                .OnDelete(DeleteBehavior.NoAction)
                 .HasConstraintName("fkReportTask");
         });
 
         modelBuilder.Entity<Role>(entity =>
         {
-            entity.HasKey(e => e.Roleid).HasName("PRIMARY");
+            entity.HasKey(e => e.Roleid).HasName("PK_Role");
 
             entity.Property(e => e.Createdat).HasDefaultValueSql("GETDATE()");
         });
 
         modelBuilder.Entity<Task>(entity =>
         {
-            entity.HasKey(e => e.TaskId).HasName("PRIMARY");
+            entity.HasKey(e => e.TaskId).HasName("PK_Task");
 
             entity.Property(e => e.CreatedAt).HasDefaultValueSql("GETDATE()");
             entity.Property(e => e.Percentagecomplete).HasDefaultValueSql("0");
@@ -209,33 +207,33 @@ public partial class ApplicationDbContext : IdentityDbContext
             entity.Property(e => e.Status).HasDefaultValueSql("'pending'");
 
             entity.HasOne(d => d.Assignee).WithMany(p => p.TaskAssignees)
-                .OnDelete(DeleteBehavior.SetNull)
+                .OnDelete(DeleteBehavior.NoAction)
                 .HasConstraintName("fkTaskAssignee");
 
             entity.HasOne(d => d.Assigner).WithMany(p => p.TaskAssigners)
-                .OnDelete(DeleteBehavior.SetNull)
+                .OnDelete(DeleteBehavior.NoAction)
                 .HasConstraintName("fkTaskAssigner");
 
             entity.HasOne(d => d.AttachedFileNavigation).WithMany(p => p.Tasks)
-                .OnDelete(DeleteBehavior.SetNull)
+                .OnDelete(DeleteBehavior.NoAction)
                 .HasConstraintName("fkTaskAttachedFile");
 
             entity.HasOne(d => d.Frequency).WithMany(p => p.Tasks)
-                .OnDelete(DeleteBehavior.SetNull)
+                .OnDelete(DeleteBehavior.NoAction)
                 .HasConstraintName("fk_taskitem_frequency");
 
             entity.HasOne(d => d.Org).WithMany(p => p.Tasks)
-                .OnDelete(DeleteBehavior.SetNull)
+                .OnDelete(DeleteBehavior.NoAction)
                 .HasConstraintName("fkTaskOrg");
 
             entity.HasOne(d => d.Period).WithMany(p => p.Tasks)
-                .OnDelete(DeleteBehavior.SetNull)
+                .OnDelete(DeleteBehavior.NoAction)
                 .HasConstraintName("fkTaskPeriod");
 
             entity.HasMany(d => d.Users).WithMany(p => p.Tasks)
                 .UsingEntity<Dictionary<string, object>>(
                     "Taskassignee",
-                    r => r.HasOne<User>().WithMany()
+                    r => r.HasOne<ApplicationUser>().WithMany()
                         .HasForeignKey("UserId")
                         .HasConstraintName("taskassignees_ibfk_2"),
                     l => l.HasOne<Task>().WithMany()
@@ -251,33 +249,33 @@ public partial class ApplicationDbContext : IdentityDbContext
 
         modelBuilder.Entity<Taskunitassignment>(entity =>
         {
-            entity.HasKey(e => e.TaskUnitAssignmentId).HasName("PRIMARY");
+            entity.HasKey(e => e.TaskUnitAssignmentId).HasName("PK_Taskunitassignment");
 
             entity.HasOne(d => d.Task).WithMany(p => p.Taskunitassignments)
-                .OnDelete(DeleteBehavior.ClientSetNull)
+                .OnDelete(DeleteBehavior.NoAction)
                 .HasConstraintName("taskunitassignment_ibfk_1");
 
             entity.HasOne(d => d.Unit).WithMany(p => p.Taskunitassignments)
-                .OnDelete(DeleteBehavior.ClientSetNull)
+                .OnDelete(DeleteBehavior.NoAction)
                 .HasConstraintName("taskunitassignment_ibfk_2");
         });
 
         modelBuilder.Entity<Unit>(entity =>
         {
-            entity.HasKey(e => e.UnitId).HasName("PRIMARY");
+            entity.HasKey(e => e.UnitId).HasName("PK_Unit");
 
             entity.Property(e => e.Type).HasDefaultValueSql("'official'");
 
             entity.HasOne(d => d.Org).WithMany(p => p.Units).HasConstraintName("fkUnitOrg");
 
             entity.HasOne(d => d.UnitParentNavigation).WithMany(p => p.InverseUnitParentNavigation)
-                .OnDelete(DeleteBehavior.SetNull)
+                .OnDelete(DeleteBehavior.NoAction)
                 .HasConstraintName("fkUnitParent");
         });
 
         modelBuilder.Entity<Unituser>(entity =>
         {
-            entity.HasKey(e => e.UnitUserId).HasName("PRIMARY");
+            entity.HasKey(e => e.UnitUserId).HasName("PK_Unituser");
 
             entity.HasOne(d => d.Unit).WithMany(p => p.Unitusers).HasConstraintName("fkUnitUserUnit");
 
@@ -286,19 +284,17 @@ public partial class ApplicationDbContext : IdentityDbContext
 
         modelBuilder.Entity<Uploadfile>(entity =>
         {
-            entity.HasKey(e => e.FileId).HasName("PRIMARY");
+            entity.HasKey(e => e.FileId).HasName("PK_Uploadfile");
 
             entity.Property(e => e.UploadedAt).HasDefaultValueSql("GETDATE()");
 
             entity.HasOne(d => d.UploadedByNavigation).WithMany(p => p.Uploadfiles)
-                .OnDelete(DeleteBehavior.SetNull)
+                .OnDelete(DeleteBehavior.NoAction)
                 .HasConstraintName("fkUploadFileUploadedBy");
         });
 
-        modelBuilder.Entity<User>(entity =>
+        modelBuilder.Entity<ApplicationUser>(entity =>
         {
-            entity.HasKey(e => e.UserId).HasName("PRIMARY");
-
             entity.Property(e => e.CreatedAt).HasDefaultValueSql("GETDATE()");
             entity.Property(e => e.Role).HasDefaultValueSql("0");
 
@@ -309,15 +305,17 @@ public partial class ApplicationDbContext : IdentityDbContext
             entity.HasOne(d => d.Unit).WithMany(p => p.Users).HasConstraintName("user_ibfk_3");
 
             entity.HasOne(d => d.UnitUser).WithMany(p => p.Users)
-                .OnDelete(DeleteBehavior.Cascade)
+                .OnDelete(DeleteBehavior.NoAction)
                 .HasConstraintName("fk_user_unitUser");
 
-            entity.HasOne(d => d.UserParentNavigation).WithMany(p => p.InverseUserParentNavigation).HasConstraintName("user_ibfk_4");
+            entity.HasOne(d => d.UserParentNavigation).WithMany(p => p.InverseUserParentNavigation)
+                .OnDelete(DeleteBehavior.NoAction)
+                .HasConstraintName("user_ibfk_4");
         });
 
         modelBuilder.Entity<Userrole>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("PRIMARY");
+            entity.HasKey(e => e.Id).HasName("PK_Userrole");
 
             entity.Property(e => e.Createdat).HasDefaultValueSql("GETDATE()");
 

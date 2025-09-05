@@ -21,7 +21,7 @@ public partial class Uploadfile
     public string FilePath { get; set; } = null!;
 
     [Column("uploadedBy")]
-    public int? UploadedBy { get; set; }
+    public string? UploadedBy { get; set; }
 
     [Column("uploadedAt")]
     public DateTime UploadedAt { get; set; }
@@ -34,5 +34,5 @@ public partial class Uploadfile
 
     [ForeignKey("UploadedBy")]
     [InverseProperty("Uploadfiles")]
-    public virtual User? UploadedByNavigation { get; set; }
+    public virtual ApplicationUser? UploadedByNavigation { get; set; }
 }
