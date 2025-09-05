@@ -1,0 +1,25 @@
+### Test Authentication - Simple Test
+
+### 1. Test if the API is running
+GET http://localhost:5168/api/v1/task
+
+### 2. Register a new user
+POST http://localhost:5168/api/v1/auth/register
+Content-Type: application/json
+
+{
+  "username": "testuser",
+  "email": "test@example.com",
+  "password": "Test123!",
+  "fullName": "Test User",
+  "phoneNumber": "1234567890"
+}
+
+### 3. Login with the registered user
+POST http://localhost:5168/api/v1/auth/login
+Content-Type: application/json
+
+{
+  "email": "test@example.com",
+  "password": "Test123!"
+}

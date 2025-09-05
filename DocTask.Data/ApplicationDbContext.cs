@@ -1,10 +1,11 @@
 using DocTask.Core.Models;
+using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 using Task = DocTask.Core.Models.Task;
 
 namespace DocTask.Data;
 
-public partial class ApplicationDbContext : DbContext
+public partial class ApplicationDbContext : IdentityDbContext
 {
     public ApplicationDbContext()
     {
@@ -35,7 +36,7 @@ public partial class ApplicationDbContext : DbContext
 
     public virtual DbSet<Reportsummary> Reportsummaries { get; set; }
 
-    public virtual DbSet<Role> Roles { get; set; }
+    public new virtual DbSet<Role> Roles { get; set; }
 
     public virtual DbSet<Task> Tasks { get; set; }
 
@@ -47,12 +48,23 @@ public partial class ApplicationDbContext : DbContext
 
     public virtual DbSet<Uploadfile> Uploadfiles { get; set; }
 
-    public virtual DbSet<User> Users { get; set; }
+    public new virtual DbSet<User> Users { get; set; }
 
     public virtual DbSet<Userrole> Userroles { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
+        base.OnModelCreating(modelBuilder);
+        
+        // Configure Identity tables to use custom names
+        modelBuilder.Entity<Microsoft.AspNetCore.Identity.IdentityUser>().ToTable("AspNetUsers");
+        modelBuilder.Entity<Microsoft.AspNetCore.Identity.IdentityRole>().ToTable("AspNetRoles");
+        modelBuilder.Entity<Microsoft.AspNetCore.Identity.IdentityUserRole<string>>().ToTable("AspNetUserRoles");
+        modelBuilder.Entity<Microsoft.AspNetCore.Identity.IdentityUserClaim<string>>().ToTable("AspNetUserClaims");
+        modelBuilder.Entity<Microsoft.AspNetCore.Identity.IdentityUserLogin<string>>().ToTable("AspNetUserLogins");
+        modelBuilder.Entity<Microsoft.AspNetCore.Identity.IdentityUserToken<string>>().ToTable("AspNetUserTokens");
+        modelBuilder.Entity<Microsoft.AspNetCore.Identity.IdentityRoleClaim<string>>().ToTable("AspNetRoleClaims");
+        
         modelBuilder.Entity<Frequency>(entity =>
         {
             entity.HasKey(e => e.FrequencyId).HasName("PRIMARY");
