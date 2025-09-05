@@ -19,8 +19,7 @@ builder.Services.AddSwagger();
 
 // Database
 builder.Services.AddDbContext<ApplicationDbContext>(options => {
-
-    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection") ?? string.Empty, 
+    options.UseSqlServer(builder.Configuration.GetConnectionStrng("DefaultConnection") ?? string.Empty, 
         b => b.MigrationsAssembly("DocTask.Data"));
 });
 
