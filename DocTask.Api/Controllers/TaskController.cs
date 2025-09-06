@@ -122,7 +122,7 @@ public class TaskController : ControllerBase
 
     [Authorize]
     [HttpPost("{parentTaskId}/subtasks")]
-    public async Task<IActionResult> CreateSubtask(int parentTaskId, [FromBody] CreateTaskRequest request)
+    public async Task<IActionResult> CreateSubtask(int parentTaskId, [FromBody] CreateSubtaskRequest request)
     {
         if (!ModelState.IsValid)
         {

@@ -95,13 +95,7 @@ public class AuthService : IAuthService
             Email = request.Email,
             EmailConfirmed = true,
             FullName = request.FullName,
-            PhoneNumber = request.PhoneNumber,
             Role = "User", // Default role
-            // Treat 0 as not provided for optional FKs
-            OrgId = request.OrgId.HasValue && request.OrgId.Value > 0 ? request.OrgId : null,
-            UnitId = request.UnitId.HasValue && request.UnitId.Value > 0 ? request.UnitId : null,
-            PositionId = request.PositionId.HasValue && request.PositionId.Value > 0 ? request.PositionId : null,
-            PositionName = request.PositionName,
             CreatedAt = DateTime.UtcNow
         };
 

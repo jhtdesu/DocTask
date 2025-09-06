@@ -67,6 +67,21 @@ public static class TaskMapper
         };
     }
 
+    public static TaskEntity ToEntity(CreateSubtaskRequest request)
+    {
+        return new TaskEntity
+        {
+            Title = request.Title,
+            Description = request.Description,
+            StartDate = request.StartDate,
+            DueDate = request.DueDate,
+            CreatedAt = DateTime.UtcNow,
+            Status = "Pending", // Default status
+            Priority = "Medium", // Default priority
+            Percentagecomplete = 0 // Default completion percentage
+        };
+    }
+
     public static void UpdateEntity(TaskEntity existingTask, UpdateTaskRequest request)
     {
         if (request.Title != null)
@@ -75,43 +90,10 @@ public static class TaskMapper
         if (request.Description != null)
             existingTask.Description = request.Description;
         
-        if (request.AssignerId != null)
-            existingTask.AssignerId = string.IsNullOrWhiteSpace(request.AssignerId) ? null : request.AssignerId;
-        
-        if (request.AssigneeId != null)
-            existingTask.AssigneeId = string.IsNullOrWhiteSpace(request.AssigneeId) ? null : request.AssigneeId;
-        
-        if (request.OrgId.HasValue)
-            existingTask.OrgId = request.OrgId;
-        
-        if (request.PeriodId.HasValue)
-            existingTask.PeriodId = request.PeriodId;
-        
-        if (request.AttachedFile.HasValue)
-            existingTask.AttachedFile = request.AttachedFile;
-        
-        if (request.Status != null)
-            existingTask.Status = request.Status;
-        
-        if (request.Priority != null)
-            existingTask.Priority = request.Priority;
-        
         if (request.StartDate.HasValue)
             existingTask.StartDate = request.StartDate;
         
         if (request.DueDate.HasValue)
             existingTask.DueDate = request.DueDate;
-        
-        if (request.UnitId.HasValue)
-            existingTask.UnitId = request.UnitId;
-        
-        if (request.FrequencyId.HasValue)
-            existingTask.FrequencyId = request.FrequencyId;
-        
-        if (request.Percentagecomplete.HasValue)
-            existingTask.Percentagecomplete = request.Percentagecomplete;
-        
-        if (request.ParentTaskId.HasValue)
-            existingTask.ParentTaskId = request.ParentTaskId;
     }
 }

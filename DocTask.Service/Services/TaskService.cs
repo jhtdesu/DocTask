@@ -71,7 +71,7 @@ public class TaskService : ITaskService
         return subtask != null ? TaskMapper.ToDto(subtask) : null;
     }
 
-    public async Task<TaskDto> CreateSubtask(int parentTaskId, CreateTaskRequest request)
+    public async Task<TaskDto> CreateSubtask(int parentTaskId, CreateSubtaskRequest request)
     {
         var subtask = TaskMapper.ToEntity(request);
         subtask.ParentTaskId = parentTaskId; // Ensure the parent task ID is set

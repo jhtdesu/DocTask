@@ -15,7 +15,7 @@ public interface ITaskService
     // Subtask methods
     Task<List<TaskDto>> GetSubtasksByParentId(int parentTaskId);
     Task<TaskDto?> GetSubtaskById(int parentTaskId, int subtaskId);
-    Task<TaskDto> CreateSubtask(int parentTaskId, CreateTaskRequest request);
+    Task<TaskDto> CreateSubtask(int parentTaskId, CreateSubtaskRequest request);
     Task<TaskDto?> UpdateSubtask(int parentTaskId, int subtaskId, UpdateTaskRequest request);
     Task<bool> DeleteSubtask(int parentTaskId, int subtaskId);
 }

@@ -20,12 +20,4 @@ public class RegisterRequest
     [Required]
     [StringLength(100)]
     public string FullName { get; set; } = string.Empty;
-
-    [StringLength(20)]
-    public string? PhoneNumber { get; set; }
-
-    public int? OrgId { get; set; } = null;
-    public int? UnitId { get; set; } = null;
-    public int? PositionId { get; set; } = null;
-    public string? PositionName { get; set; } = null;
 }
