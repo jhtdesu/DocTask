@@ -26,7 +26,8 @@ public static class TaskMapper
             UnitId = task.UnitId,
             FrequencyId = task.FrequencyId,
             Percentagecomplete = task.Percentagecomplete,
-            ParentTaskId = task.ParentTaskId
+            ParentTaskId = task.ParentTaskId,
+            FrequencyDate = null
         };
     }
 
@@ -75,6 +76,8 @@ public static class TaskMapper
             Description = request.Description,
             StartDate = request.StartDate,
             DueDate = request.DueDate,
+            FrequencyId = request.FrequencyId,
+            PeriodId = request.PeriodId,
             CreatedAt = DateTime.UtcNow,
             Status = "Pending", // Default status
             Priority = "Medium", // Default priority

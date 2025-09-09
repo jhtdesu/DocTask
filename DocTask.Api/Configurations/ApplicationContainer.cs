@@ -15,6 +15,15 @@ public static class ApplicationContainer
         services.AddScoped<IUploadFileRepository, UploadFileRepository>();
         services.AddScoped<IProgressService, ProgressService>();
         services.AddScoped<IProgressRepository, ProgressRepository>();
+        
+        // Frequency services
+        services.AddScoped<IFrequencyService, FrequencyService>();
+        services.AddScoped<IFrequencyRepository, FrequencyRepository>();
+        
+        // Period services
+        services.AddScoped<IPeriodService, PeriodService>();
+        services.AddScoped<IPeriodRepository, PeriodRepository>();
+        
         return services;
     }
     

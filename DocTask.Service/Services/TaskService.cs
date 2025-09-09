@@ -73,10 +73,25 @@ public class TaskService : ITaskService
 
     public async Task<TaskDto> CreateSubtask(int parentTaskId, CreateSubtaskRequest request)
     {
-        var subtask = TaskMapper.ToEntity(request);
-        subtask.ParentTaskId = parentTaskId; // Ensure the parent task ID is set
-        var createdSubtask = await _taskRepository.CreateSubtask(subtask);
-        return TaskMapper.ToDto(createdSubtask);
+        try
+        {
+            var subtask = TaskMapper.ToEntity(request);
+            subtask.ParentTaskId = parentTaskId; // Ensure the parent task ID is set
+            
+            // Validate that the parent task exists
+            var parentTask = await _taskRepository.GetTaskById(parentTaskId);
+            if (parentTask == null)
+            {
+                throw new ArgumentException($"Parent task with ID {parentTaskId} not found");
+            }
+            
+            var createdSubtask = await _taskRepository.CreateSubtask(subtask);
+            return TaskMapper.ToDto(createdSubtask);
+        }
+        catch (Exception ex)
+        {
+            throw new Exception($"Error creating subtask: {ex.Message}", ex);
+        }
     }
 
     public async Task<TaskDto?> UpdateSubtask(int parentTaskId, int subtaskId, UpdateTaskRequest request)
@@ -93,5 +108,25 @@ public class TaskService : ITaskService
     public async Task<bool> DeleteSubtask(int parentTaskId, int subtaskId)
     {
         return await _taskRepository.DeleteSubtask(parentTaskId, subtaskId);
+    }
+
+    public async Task<object> GetDebugData()
+    {
+        var tasks = await _taskRepository.GetAllTasks();
+        var firstTask = tasks.FirstOrDefault();
+        
+        return new
+        {
+            TotalTasks = tasks.Count,
+            FirstTaskId = firstTask?.TaskId,
+            SampleTask = firstTask != null ? new
+            {
+                TaskId = firstTask.TaskId,
+                Title = firstTask.Title,
+                FrequencyId = firstTask.FrequencyId,
+                PeriodId = firstTask.PeriodId
+            } : null,
+            Message = "Use this endpoint to check if you have valid parent task IDs, frequency IDs, and period IDs"
+        };
     }
 }

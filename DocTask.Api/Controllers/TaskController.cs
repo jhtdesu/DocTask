@@ -137,7 +137,12 @@ public class TaskController : ControllerBase
         }
         catch (Exception ex)
         {
-            return BadRequest(new ApiResponse<TaskDto> { Success = false, Error = $"Error creating subtask: {ex.Message}" });
+            // Enhanced error logging for debugging
+            var errorMessage = ex.InnerException?.Message ?? ex.Message;
+            return BadRequest(new ApiResponse<TaskDto> { 
+                Success = false, 
+                Error = $"Error creating subtask: {errorMessage}" 
+            });
         }
     }
 
@@ -181,6 +186,21 @@ public class TaskController : ControllerBase
         catch (Exception ex)
         {
             return BadRequest(new ApiResponse<bool> { Success = false, Error = $"Error deleting subtask: {ex.Message}" });
+        }
+    }
+
+    [Authorize]
+    [HttpGet("debug/data")]
+    public async Task<IActionResult> GetDebugData()
+    {
+        try
+        {
+            var debugData = await _taskService.GetDebugData();
+            return Ok(new ApiResponse<object> { Success = true, Data = debugData });
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new ApiResponse<object> { Success = false, Error = $"Error getting debug data: {ex.Message}" });
         }
     }
 }

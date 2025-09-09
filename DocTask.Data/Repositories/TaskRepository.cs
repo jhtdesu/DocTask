@@ -17,13 +17,16 @@ public class TaskRepository : ITaskRepository
     public async Task<List<TaskEntity>> GetAllTasks()
     {
         return await _context.Tasks
+            .Include(t => t.Period)
             .Where(t => t.ParentTaskId == null)
             .ToListAsync();
     }
 
     public async Task<TaskEntity?> GetTaskById(int id)
     {
-        return await _context.Tasks.FindAsync(id);
+        return await _context.Tasks
+            .Include(t => t.Period)
+            .FirstOrDefaultAsync(t => t.TaskId == id);
     }
 
     public async Task<TaskEntity> CreateTask(TaskEntity task)
@@ -65,6 +68,7 @@ public class TaskRepository : ITaskRepository
     public async Task<List<TaskEntity>> GetSubtasksByParentId(int parentTaskId)
     {
         return await _context.Tasks
+            .Include(t => t.Period)
             .Where(t => t.ParentTaskId == parentTaskId)
             .ToListAsync();
     }
@@ -72,6 +76,7 @@ public class TaskRepository : ITaskRepository
     public async Task<TaskEntity?> GetSubtaskById(int parentTaskId, int subtaskId)
     {
         return await _context.Tasks
+            .Include(t => t.Period)
             .FirstOrDefaultAsync(t => t.TaskId == subtaskId && t.ParentTaskId == parentTaskId);
     }
 

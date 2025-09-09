@@ -19,6 +19,7 @@ public class TaskDto
     public int? FrequencyId { get; set; }
     public int? Percentagecomplete { get; set; }
     public int? ParentTaskId { get; set; }
+    public DateTime? FrequencyDate { get; set; }
 }
 
 public class CreateTaskRequest
@@ -62,4 +63,6 @@ public class CreateSubtaskRequest
     public string? Description { get; set; }
     public DateTime? StartDate { get; set; }
     public DateTime? DueDate { get; set; }
+    public int? FrequencyId { get; set; }
+    public int? PeriodId { get; set; }
 }

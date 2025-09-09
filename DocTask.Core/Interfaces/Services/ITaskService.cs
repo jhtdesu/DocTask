@@ -18,4 +18,7 @@ public interface ITaskService
     Task<TaskDto> CreateSubtask(int parentTaskId, CreateSubtaskRequest request);
     Task<TaskDto?> UpdateSubtask(int parentTaskId, int subtaskId, UpdateTaskRequest request);
     Task<bool> DeleteSubtask(int parentTaskId, int subtaskId);
+    
+    // Debug method
+    Task<object> GetDebugData();
 }
