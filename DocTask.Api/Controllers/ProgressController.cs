@@ -19,16 +19,31 @@ public class ProgressController : ControllerBase
 
     [Authorize]
     [HttpGet]
-    public async Task<IActionResult> GetAllProgress([FromQuery] DateTime? startDate, [FromQuery] DateTime? dueDate)
+    public async Task<IActionResult> GetAllProgress([FromQuery] DateTime? startDate, [FromQuery] DateTime? dueDate, [FromQuery] PaginationRequest? request = null)
     {
         try
         {
-            var progress = await _progressService.GetAllProgress(startDate, dueDate);
-            return Ok(new ApiResponse<List<ProgressDto>> { Success = true, Data = progress });
+            if (request != null)
+            {
+                var progress = await _progressService.GetProgressPaginated(request, startDate, dueDate);
+                return Ok(new PaginatedApiResponse<ProgressDto>(progress, "Progress retrieved successfully"));
+            }
+            else
+            {
+                var progress = await _progressService.GetAllProgress(startDate, dueDate);
+                return Ok(new ApiResponse<List<ProgressDto>> { Success = true, Data = progress });
+            }
         }
         catch (Exception ex)
         {
-            return StatusCode(500, new ApiResponse<List<ProgressDto>> { Success = false, Error = $"Error retrieving progress: {ex.Message}" });
+            if (request != null)
+            {
+                return StatusCode(500, new PaginatedApiResponse<ProgressDto>(false, $"Error retrieving progress: {ex.Message}"));
+            }
+            else
+            {
+                return StatusCode(500, new ApiResponse<List<ProgressDto>> { Success = false, Error = $"Error retrieving progress: {ex.Message}" });
+            }
         }
     }
 
@@ -48,6 +63,44 @@ public class ProgressController : ControllerBase
         catch (Exception ex)
         {
             return StatusCode(500, new ApiResponse<ProgressDto> { Success = false, Error = $"Error retrieving progress: {ex.Message}" });
+        }
+    }
+
+    [Authorize]
+    [HttpPost]
+    public async Task<IActionResult> CreateProgress([FromForm] CreateProgressDto createProgressDto)
+    {
+        try
+        {
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(new ApiResponse<ProgressDto> { Success = false, Error = "Invalid model state" });
+            }
+
+            // Get the current user ID from claims
+            var userId = User.FindFirst("sub")?.Value ?? 
+                        User.FindFirst("nameid")?.Value ?? 
+                        User.FindFirst("http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier")?.Value ??
+                        User.FindFirst("id")?.Value ??
+                        User.Identity?.Name;
+            
+            if (string.IsNullOrEmpty(userId))
+            {
+                // Debug information - return available claims
+                var claims = User.Claims.Select(c => new { c.Type, c.Value }).ToList();
+                return Unauthorized(new ApiResponse<ProgressDto> { 
+                    Success = false, 
+                    Error = $"User not authenticated. Available claims: {string.Join(", ", claims.Select(c => $"{c.Type}={c.Value}"))}" 
+                });
+            }
+
+            var progress = await _progressService.CreateProgress(createProgressDto, userId);
+            return CreatedAtAction(nameof(GetProgressById), new { id = progress.ProgressId }, 
+                new ApiResponse<ProgressDto> { Success = true, Data = progress, Message = "Progress created successfully" });
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, new ApiResponse<ProgressDto> { Success = false, Error = $"Error creating progress: {ex.Message}" });
         }
     }
 

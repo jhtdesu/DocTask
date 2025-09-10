@@ -1,4 +1,5 @@
 using DocTask.Core.Dtos.UploadFile;
+using DocTask.Core.DTOs.ApiResponses;
 using DocTask.Core.Interfaces.Repositories;
 using DocTask.Core.Interfaces.Services;
 using DocTask.Core.Models;
@@ -108,6 +109,35 @@ public class UploadFileService : IUploadFileService
                 ContentType = GetContentType(uploadFile.FileName)
             };
         }).ToList();
+    }
+
+    public async Task<PaginationResponse<UploadFileDto>> GetFilesByUserIdPaginated(string userId, PaginationRequest request)
+    {
+        var (items, totalCount) = await _uploadFileRepository.GetByUserIdPaginated(userId, request);
+        
+        var uploadFileDtos = items.Select(uploadFile =>
+        {
+            var fileInfo = new FileInfo(uploadFile.FilePath);
+            return new UploadFileDto
+            {
+                FileId = uploadFile.FileId,
+                FileName = uploadFile.FileName,
+                FilePath = uploadFile.FilePath,
+                UploadedBy = uploadFile.UploadedBy,
+                UploadedAt = uploadFile.UploadedAt,
+                FileSize = fileInfo.Exists ? fileInfo.Length : 0,
+                ContentType = GetContentType(uploadFile.FileName)
+            };
+        }).ToList();
+        
+        return new PaginationResponse<UploadFileDto>
+        {
+            Data = uploadFileDtos,
+            CurrentPage = request.Page,
+            PageSize = request.PageSize,
+            TotalCount = totalCount,
+            TotalPages = (int)Math.Ceiling((double)totalCount / request.PageSize)
+        };
     }
 
     public async Task<bool> DeleteFileAsync(int fileId, string userId)

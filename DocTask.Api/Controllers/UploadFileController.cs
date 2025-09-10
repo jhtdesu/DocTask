@@ -101,34 +101,56 @@ public class UploadFileController : ControllerBase
     }
 
     [HttpGet("files")]
-    public async Task<IActionResult> GetUserFiles()
+    public async Task<IActionResult> GetUserFiles([FromQuery] PaginationRequest? request = null)
     {
         try
         {
             var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
             if (string.IsNullOrEmpty(userId))
             {
-                return Unauthorized(new ApiResponse<List<UploadFileDto>> 
-                { 
-                    Success = false, 
-                    Error = "User not authenticated" 
-                });
+                if (request != null)
+                {
+                    return Unauthorized(new PaginatedApiResponse<UploadFileDto>(false, "User not authenticated"));
+                }
+                else
+                {
+                    return Unauthorized(new ApiResponse<List<UploadFileDto>> 
+                    { 
+                        Success = false, 
+                        Error = "User not authenticated" 
+                    });
+                }
             }
 
-            var files = await _uploadFileService.GetFilesByUserIdAsync(userId);
-            return Ok(new ApiResponse<List<UploadFileDto>> 
-            { 
-                Success = true, 
-                Data = files 
-            });
+            if (request != null)
+            {
+                var files = await _uploadFileService.GetFilesByUserIdPaginated(userId, request);
+                return Ok(new PaginatedApiResponse<UploadFileDto>(files, "Files retrieved successfully"));
+            }
+            else
+            {
+                var files = await _uploadFileService.GetFilesByUserIdAsync(userId);
+                return Ok(new ApiResponse<List<UploadFileDto>> 
+                { 
+                    Success = true, 
+                    Data = files 
+                });
+            }
         }
         catch (Exception ex)
         {
-            return StatusCode(500, new ApiResponse<List<UploadFileDto>> 
-            { 
-                Success = false, 
-                Error = $"Error retrieving files: {ex.Message}" 
-            });
+            if (request != null)
+            {
+                return StatusCode(500, new PaginatedApiResponse<UploadFileDto>(false, $"Error retrieving files: {ex.Message}"));
+            }
+            else
+            {
+                return StatusCode(500, new ApiResponse<List<UploadFileDto>> 
+                { 
+                    Success = false, 
+                    Error = $"Error retrieving files: {ex.Message}" 
+                });
+            }
         }
     }
 

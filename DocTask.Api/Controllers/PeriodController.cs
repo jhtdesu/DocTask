@@ -19,10 +19,18 @@ public class PeriodController : ControllerBase
     }
 
     [HttpGet]
-    public async Task<IActionResult> GetAllPeriods()
+    public async Task<IActionResult> GetAllPeriods([FromQuery] PaginationRequest? request = null)
     {
-        var periods = await _periodService.GetAllPeriods();
-        return Ok(new ApiResponse<List<PeriodDto>> { Success = true, Data = periods });
+        if (request != null)
+        {
+            var periods = await _periodService.GetPeriodsPaginated(request);
+            return Ok(new PaginatedApiResponse<PeriodDto>(periods, "Periods retrieved successfully"));
+        }
+        else
+        {
+            var periods = await _periodService.GetAllPeriods();
+            return Ok(new ApiResponse<List<PeriodDto>> { Success = true, Data = periods });
+        }
     }
 
     [HttpGet("{id}")]

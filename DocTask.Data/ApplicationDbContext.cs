@@ -1,4 +1,5 @@
 using DocTask.Core.Models;
+using DocTask.Core.Enums;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 using Task = DocTask.Core.Models.Task;
@@ -39,6 +40,7 @@ public partial class ApplicationDbContext : IdentityDbContext<ApplicationUser>
     public new virtual DbSet<Role> Roles { get; set; }
 
     public virtual DbSet<Task> Tasks { get; set; }
+
 
     public virtual DbSet<Taskunitassignment> Taskunitassignments { get; set; }
 
@@ -206,7 +208,7 @@ public partial class ApplicationDbContext : IdentityDbContext<ApplicationUser>
             entity.Property(e => e.Priority).HasDefaultValueSql("'medium'");
             entity.Property(e => e.Status).HasDefaultValueSql("'pending'");
 
-            entity.HasOne(d => d.Assignee).WithMany(p => p.TaskAssignees)
+            entity.HasOne(d => d.Assignee).WithMany()
                 .OnDelete(DeleteBehavior.NoAction)
                 .HasConstraintName("fkTaskAssignee");
 
@@ -246,6 +248,7 @@ public partial class ApplicationDbContext : IdentityDbContext<ApplicationUser>
                         j.HasIndex(new[] { "UserId" }, "UserId");
                     });
         });
+
 
         modelBuilder.Entity<Taskunitassignment>(entity =>
         {

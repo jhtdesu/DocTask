@@ -3,6 +3,7 @@ using DocTask.Core.Dtos.Tasks;
 using DocTask.Core.Interfaces.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
+using System.Security.Claims;
 
 namespace DockTask.Api.Controllers;
 
@@ -19,10 +20,18 @@ public class TaskController : ControllerBase
 
     [Authorize]
     [HttpGet]
-    public async Task<IActionResult> GetAllTasks()
+    public async Task<IActionResult> GetAllTasks([FromQuery] PaginationRequest? request = null)
     {
-        var tasks = await _taskService.GetAllTasks();
-        return Ok(new ApiResponse<List<TaskDto>> { Success = true, Data = tasks });
+        if (request != null)
+        {
+            var tasks = await _taskService.GetTasksPaginated(request);
+            return Ok(new PaginatedApiResponse<TaskDto>(tasks, "Tasks retrieved successfully"));
+        }
+        else
+        {
+            var tasks = await _taskService.GetAllTasks();
+            return Ok(new ApiResponse<List<TaskDto>> { Success = true, Data = tasks });
+        }
     }
 
     [Authorize]
@@ -102,10 +111,18 @@ public class TaskController : ControllerBase
 
     [Authorize]
     [HttpGet("{parentTaskId}/subtasks")]
-    public async Task<IActionResult> GetSubtasksByParentId(int parentTaskId)
+    public async Task<IActionResult> GetSubtasksByParentId(int parentTaskId, [FromQuery] PaginationRequest? request = null)
     {
-        var subtasks = await _taskService.GetSubtasksByParentId(parentTaskId);
-        return Ok(new ApiResponse<List<TaskDto>> { Success = true, Data = subtasks });
+        if (request != null)
+        {
+            var subtasks = await _taskService.GetSubtasksPaginated(parentTaskId, request);
+            return Ok(new PaginatedApiResponse<TaskDto>(subtasks, "Subtasks retrieved successfully"));
+        }
+        else
+        {
+            var subtasks = await _taskService.GetSubtasksByParentId(parentTaskId);
+            return Ok(new ApiResponse<List<TaskDto>> { Success = true, Data = subtasks });
+        }
     }
 
     [Authorize]
@@ -122,7 +139,7 @@ public class TaskController : ControllerBase
 
     [Authorize]
     [HttpPost("{parentTaskId}/subtasks")]
-    public async Task<IActionResult> CreateSubtask(int parentTaskId, [FromBody] CreateSubtaskRequest request)
+    public async Task<IActionResult> CreateSubtask(int parentTaskId, [FromBody] CreateSubtaskWithAssignmentsRequest request)
     {
         if (!ModelState.IsValid)
         {
@@ -131,9 +148,20 @@ public class TaskController : ControllerBase
 
         try
         {
-            var subtask = await _taskService.CreateSubtask(parentTaskId, request);
+            // Get the current user ID from the claims
+            var currentUserId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (string.IsNullOrEmpty(currentUserId))
+            {
+                return Unauthorized(new ApiResponse<TaskDto> { Success = false, Error = "User not authenticated" });
+            }
+
+            // Set the assigner ID to the current user
+            request.AssignerId = currentUserId;
+
+
+            var subtask = await _taskService.CreateSubtaskWithAssignments(parentTaskId, request);
             return CreatedAtAction(nameof(GetSubtaskById), new { parentTaskId, subtaskId = subtask.TaskId }, 
-                new ApiResponse<TaskDto> { Success = true, Data = subtask });
+                new ApiResponse<TaskDto> { Success = true, Data = subtask, Message = "Subtask created with user assignments successfully" });
         }
         catch (Exception ex)
         {
@@ -148,7 +176,7 @@ public class TaskController : ControllerBase
 
     [Authorize]
     [HttpPut("{parentTaskId}/subtasks/{subtaskId}")]
-    public async Task<IActionResult> UpdateSubtask(int parentTaskId, int subtaskId, [FromBody] UpdateTaskRequest request)
+    public async Task<IActionResult> UpdateSubtask(int parentTaskId, int subtaskId, [FromBody] UpdateSubtaskWithAssignmentsRequest request)
     {
         if (!ModelState.IsValid)
         {
@@ -157,16 +185,35 @@ public class TaskController : ControllerBase
 
         try
         {
-            var subtask = await _taskService.UpdateSubtask(parentTaskId, subtaskId, request);
+            // Get the current user ID from the claims
+            var currentUserId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (string.IsNullOrEmpty(currentUserId))
+            {
+                return Unauthorized(new ApiResponse<TaskDto> { Success = false, Error = "User not authenticated" });
+            }
+
+            // Set the assigner ID to the current user if not provided
+            if (string.IsNullOrEmpty(request.AssignerId))
+            {
+                request.AssignerId = currentUserId;
+            }
+
+
+            var subtask = await _taskService.UpdateSubtaskWithAssignments(parentTaskId, subtaskId, request);
             if (subtask == null)
             {
                 return NotFound(new ApiResponse<TaskDto> { Success = false, Error = "Subtask not found" });
             }
-            return Ok(new ApiResponse<TaskDto> { Success = true, Data = subtask });
+            return Ok(new ApiResponse<TaskDto> { Success = true, Data = subtask, Message = "Subtask updated with user assignments successfully" });
         }
         catch (Exception ex)
         {
-            return BadRequest(new ApiResponse<TaskDto> { Success = false, Error = $"Error updating subtask: {ex.Message}" });
+            // Enhanced error logging for debugging
+            var errorMessage = ex.InnerException?.Message ?? ex.Message;
+            return BadRequest(new ApiResponse<TaskDto> { 
+                Success = false, 
+                Error = $"Error updating subtask: {errorMessage}" 
+            });
         }
     }
 
@@ -189,18 +236,4 @@ public class TaskController : ControllerBase
         }
     }
 
-    [Authorize]
-    [HttpGet("debug/data")]
-    public async Task<IActionResult> GetDebugData()
-    {
-        try
-        {
-            var debugData = await _taskService.GetDebugData();
-            return Ok(new ApiResponse<object> { Success = true, Data = debugData });
-        }
-        catch (Exception ex)
-        {
-            return BadRequest(new ApiResponse<object> { Success = false, Error = $"Error getting debug data: {ex.Message}" });
-        }
-    }
 }

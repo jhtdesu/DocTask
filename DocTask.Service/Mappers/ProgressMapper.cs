@@ -32,4 +32,23 @@ public static class ProgressMapper
     {
         return progressList.Select(ToDto).ToList();
     }
+
+    public static Progress ToModel(CreateProgressDto createProgressDto, string updatedBy)
+    {
+        return new Progress
+        {
+            TaskId = createProgressDto.TaskId,
+            PeriodId = createProgressDto.PeriodId,
+            Proposal = createProgressDto.Proposal,
+            Result = createProgressDto.Result,
+            Feedback = createProgressDto.Feedback,
+            PercentageComplete = createProgressDto.PercentageComplete,
+            Comment = createProgressDto.Comment,
+            Status = createProgressDto.Status ?? "pending",
+            UpdatedBy = updatedBy,
+            UpdatedAt = DateTime.UtcNow,
+            FileName = createProgressDto.ReportFile?.FileName,
+            FilePath = null // Will be set by file upload service
+        };
+    }
 }

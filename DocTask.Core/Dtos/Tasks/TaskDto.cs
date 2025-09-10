@@ -1,3 +1,5 @@
+using DocTask.Core.Enums;
+
 namespace DocTask.Core.Dtos.Tasks;
 
 public class TaskDto
@@ -6,7 +8,6 @@ public class TaskDto
     public string Title { get; set; } = null!;
     public string? Description { get; set; }
     public string? AssignerId { get; set; }
-    public string? AssigneeId { get; set; }
     public int? OrgId { get; set; }
     public int? PeriodId { get; set; }
     public int? AttachedFile { get; set; }
@@ -20,6 +21,7 @@ public class TaskDto
     public int? Percentagecomplete { get; set; }
     public int? ParentTaskId { get; set; }
     public DateTime? FrequencyDate { get; set; }
+    public List<UserAssignmentDto> UserAssignments { get; set; } = new List<UserAssignmentDto>();
 }
 
 public class CreateTaskRequest
@@ -27,7 +29,6 @@ public class CreateTaskRequest
     public string Title { get; set; } = null!;
     public string? Description { get; set; }
     public string? AssignerId { get; set; } 
-    public string? AssigneeId { get; set; }
     public int? OrgId { get; set; }
     public int? PeriodId { get; set; }
     public int? AttachedFile { get; set; }
@@ -65,4 +66,33 @@ public class CreateSubtaskRequest
     public DateTime? DueDate { get; set; }
     public int? FrequencyId { get; set; }
     public int? PeriodId { get; set; }
+}
+
+public class UserAssignmentDto
+{
+    public string AssigneeId { get; set; } = null!;
+}
+
+public class CreateSubtaskWithAssignmentsRequest
+{
+    public string Title { get; set; } = null!;
+    public string? Description { get; set; }
+    public DateTime? StartDate { get; set; }
+    public DateTime? DueDate { get; set; }
+    public int? FrequencyId { get; set; }
+    public int? PeriodId { get; set; }
+    public string? AssignerId { get; set; }
+    public List<UserAssignmentDto> UserAssignments { get; set; } = new List<UserAssignmentDto>();
+}
+
+public class UpdateSubtaskWithAssignmentsRequest
+{
+    public string? Title { get; set; }
+    public string? Description { get; set; }
+    public DateTime? StartDate { get; set; }
+    public DateTime? DueDate { get; set; }
+    public int? FrequencyId { get; set; }
+    public int? PeriodId { get; set; }
+    public string? AssignerId { get; set; }
+    public List<UserAssignmentDto> UserAssignments { get; set; } = new List<UserAssignmentDto>();
 }

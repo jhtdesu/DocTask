@@ -1,5 +1,6 @@
 using DocTask.Core.Dtos.Frequency;
 using DocTask.Core.Dtos.Period;
+using DocTask.Core.DTOs.ApiResponses;
 using DocTask.Core.Interfaces.Repositories;
 using DocTask.Core.Interfaces.Services;
 using DocTask.Service.Mappers;
@@ -21,6 +22,21 @@ public class FrequencyService : IFrequencyService
     {
         var frequencies = await _frequencyRepository.GetAllFrequencies();
         return frequencies.Select(FrequencyMapper.ToDto).ToList();
+    }
+
+    public async Task<PaginationResponse<FrequencyDto>> GetFrequenciesPaginated(PaginationRequest request)
+    {
+        var (items, totalCount) = await _frequencyRepository.GetFrequenciesPaginated(request);
+        var frequencyDtos = items.Select(FrequencyMapper.ToDto).ToList();
+        
+        return new PaginationResponse<FrequencyDto>
+        {
+            Data = frequencyDtos,
+            CurrentPage = request.Page,
+            PageSize = request.PageSize,
+            TotalCount = totalCount,
+            TotalPages = (int)Math.Ceiling((double)totalCount / request.PageSize)
+        };
     }
 
     public async Task<FrequencyDto?> GetFrequencyById(int id)
@@ -56,6 +72,21 @@ public class FrequencyService : IFrequencyService
     {
         var frequencyDetails = await _frequencyRepository.GetFrequencyDetailsByFrequencyId(frequencyId);
         return frequencyDetails.Select(FrequencyMapper.ToDto).ToList();
+    }
+
+    public async Task<PaginationResponse<FrequencyDetailDto>> GetFrequencyDetailsPaginated(int frequencyId, PaginationRequest request)
+    {
+        var (items, totalCount) = await _frequencyRepository.GetFrequencyDetailsPaginated(frequencyId, request);
+        var frequencyDetailDtos = items.Select(FrequencyMapper.ToDto).ToList();
+        
+        return new PaginationResponse<FrequencyDetailDto>
+        {
+            Data = frequencyDetailDtos,
+            CurrentPage = request.Page,
+            PageSize = request.PageSize,
+            TotalCount = totalCount,
+            TotalPages = (int)Math.Ceiling((double)totalCount / request.PageSize)
+        };
     }
 
     public async Task<FrequencyDetailDto> CreateFrequencyDetail(CreateFrequencyDetailRequest request)

@@ -80,9 +80,6 @@ public class ApplicationUser : IdentityUser
     [InverseProperty("CreatedByNavigation")]
     public virtual ICollection<Reportsummary> Reportsummaries { get; set; } = new List<Reportsummary>();
 
-    [InverseProperty("Assignee")]
-    public virtual ICollection<Task> TaskAssignees { get; set; } = new List<Task>();
-
     [InverseProperty("Assigner")]
     public virtual ICollection<Task> TaskAssigners { get; set; } = new List<Task>();
 

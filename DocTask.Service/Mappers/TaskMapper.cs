@@ -14,7 +14,6 @@ public static class TaskMapper
             Title = task.Title,
             Description = task.Description,
             AssignerId = task.AssignerId,
-            AssigneeId = task.AssigneeId,
             OrgId = task.OrgId,
             PeriodId = task.PeriodId,
             AttachedFile = task.AttachedFile,
@@ -27,7 +26,11 @@ public static class TaskMapper
             FrequencyId = task.FrequencyId,
             Percentagecomplete = task.Percentagecomplete,
             ParentTaskId = task.ParentTaskId,
-            FrequencyDate = null
+            FrequencyDate = null,
+            UserAssignments = task.Users?.Select(u => new UserAssignmentDto
+            {
+                AssigneeId = u.Id
+            }).ToList() ?? new List<UserAssignmentDto>()
         };
     }
 
@@ -53,7 +56,6 @@ public static class TaskMapper
             Title = request.Title,
             Description = request.Description,
             AssignerId = string.IsNullOrWhiteSpace(request.AssignerId) ? null : request.AssignerId,
-            AssigneeId = string.IsNullOrWhiteSpace(request.AssigneeId) ? null : request.AssigneeId,
             OrgId = request.OrgId,
             PeriodId = request.PeriodId,
             AttachedFile = request.AttachedFile,

@@ -19,10 +19,18 @@ public class FrequencyController : ControllerBase
     }
 
     [HttpGet]
-    public async Task<IActionResult> GetAllFrequencies()
+    public async Task<IActionResult> GetAllFrequencies([FromQuery] PaginationRequest? request = null)
     {
-        var frequencies = await _frequencyService.GetAllFrequencies();
-        return Ok(new ApiResponse<List<FrequencyDto>> { Success = true, Data = frequencies });
+        if (request != null)
+        {
+            var frequencies = await _frequencyService.GetFrequenciesPaginated(request);
+            return Ok(new PaginatedApiResponse<FrequencyDto>(frequencies, "Frequencies retrieved successfully"));
+        }
+        else
+        {
+            var frequencies = await _frequencyService.GetAllFrequencies();
+            return Ok(new ApiResponse<List<FrequencyDto>> { Success = true, Data = frequencies });
+        }
     }
 
     [HttpGet("{id}")]
@@ -98,10 +106,18 @@ public class FrequencyController : ControllerBase
     }
 
     [HttpGet("{frequencyId}/details")]
-    public async Task<IActionResult> GetFrequencyDetails(int frequencyId)
+    public async Task<IActionResult> GetFrequencyDetails(int frequencyId, [FromQuery] PaginationRequest? request = null)
     {
-        var details = await _frequencyService.GetFrequencyDetailsByFrequencyId(frequencyId);
-        return Ok(new ApiResponse<List<FrequencyDetailDto>> { Success = true, Data = details });
+        if (request != null)
+        {
+            var details = await _frequencyService.GetFrequencyDetailsPaginated(frequencyId, request);
+            return Ok(new PaginatedApiResponse<FrequencyDetailDto>(details, "Frequency details retrieved successfully"));
+        }
+        else
+        {
+            var details = await _frequencyService.GetFrequencyDetailsByFrequencyId(frequencyId);
+            return Ok(new ApiResponse<List<FrequencyDetailDto>> { Success = true, Data = details });
+        }
     }
 
     [HttpPost("details")]

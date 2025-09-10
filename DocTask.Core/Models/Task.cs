@@ -69,7 +69,6 @@ public partial class Task
     public int? ParentTaskId { get; set; }
 
     [ForeignKey("AssigneeId")]
-    [InverseProperty("TaskAssignees")]
     public virtual ApplicationUser? Assignee { get; set; }
 
     [ForeignKey("AssignerId")]

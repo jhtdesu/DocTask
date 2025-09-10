@@ -1,4 +1,5 @@
 using DocTask.Core.Dtos.Period;
+using DocTask.Core.DTOs.ApiResponses;
 using DocTask.Core.Interfaces.Repositories;
 using DocTask.Core.Interfaces.Services;
 using DocTask.Service.Mappers;
@@ -18,6 +19,21 @@ public class PeriodService : IPeriodService
     {
         var periods = await _periodRepository.GetAllPeriods();
         return periods.Select(PeriodMapper.ToDto).ToList();
+    }
+
+    public async Task<PaginationResponse<PeriodDto>> GetPeriodsPaginated(PaginationRequest request)
+    {
+        var (items, totalCount) = await _periodRepository.GetPeriodsPaginated(request);
+        var periodDtos = items.Select(PeriodMapper.ToDto).ToList();
+        
+        return new PaginationResponse<PeriodDto>
+        {
+            Data = periodDtos,
+            CurrentPage = request.Page,
+            PageSize = request.PageSize,
+            TotalCount = totalCount,
+            TotalPages = (int)Math.Ceiling((double)totalCount / request.PageSize)
+        };
     }
 
     public async Task<PeriodDto?> GetPeriodById(int id)
