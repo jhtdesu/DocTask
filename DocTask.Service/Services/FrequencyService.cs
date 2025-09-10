@@ -139,7 +139,7 @@ public class FrequencyService : IFrequencyService
         };
     }
     
-    private List<PeriodDto> GeneratePeriodsBasedOnFrequency(string frequencyType, DateTime startDate, DateTime endDate, int intervalValue)
+    private List<PeriodDto> GeneratePeriodsBasedOnFrequency(string frequencyType, DateTime startDate, DateTime endDate, int intervalValue, List<int>? daysOfWeek = null, int? dayOfMonth = null)
     {
         var periods = new List<PeriodDto>();
         var currentDate = startDate;
@@ -147,8 +147,8 @@ public class FrequencyService : IFrequencyService
         
         while (currentDate <= endDate)
         {
-            DateTime periodEndDate;
-            string periodName;
+            DateTime periodEndDate = currentDate;
+            string periodName = string.Empty;
             
             switch (frequencyType.ToLower())
             {
@@ -159,12 +159,52 @@ public class FrequencyService : IFrequencyService
                     break;
                     
                 case "weekly":
+                    // If daysOfWeek provided, create one period per chosen day
+                    if (daysOfWeek != null && daysOfWeek.Any())
+                    {
+                        foreach (var dow in daysOfWeek.OrderBy(d => d))
+                        {
+                            var next = NextDayOfWeek(currentDate, (DayOfWeek)dow);
+                            if (next > endDate) break;
+                            var pEnd = next.AddDays(1).AddSeconds(-1);
+                            periods.Add(new PeriodDto
+                            {
+                                PeriodId = 0,
+                                PeriodName = $"Week {periodCounter} - {next:dddd, MMM dd}",
+                                StartDate = next.Date,
+                                EndDate = pEnd,
+                                CreatedAt = DateTime.UtcNow
+                            });
+                            periodCounter++;
+                        }
+                        currentDate = currentDate.AddDays(7 * intervalValue);
+                        continue;
+                    }
                     periodEndDate = currentDate.AddDays(7).AddSeconds(-1);
                     periodName = $"Week {periodCounter} - {currentDate:MMM dd} to {periodEndDate:MMM dd, yyyy}";
                     currentDate = currentDate.AddDays(7 * intervalValue);
                     break;
                     
                 case "monthly":
+                    if (dayOfMonth.HasValue)
+                    {
+                        var nextMonthDate = new DateTime(currentDate.Year, currentDate.Month, 1).AddMonths(0);
+                        var targetDay = Math.Min(dayOfMonth.Value, DateTime.DaysInMonth(nextMonthDate.Year, nextMonthDate.Month));
+                        var occurrence = new DateTime(nextMonthDate.Year, nextMonthDate.Month, targetDay);
+                        if (occurrence < currentDate) occurrence = occurrence.AddMonths(intervalValue);
+                        if (occurrence > endDate) break;
+                        periods.Add(new PeriodDto
+                        {
+                            PeriodId = 0,
+                            PeriodName = $"Month {periodCounter} - {occurrence:MMM dd, yyyy}",
+                            StartDate = occurrence,
+                            EndDate = occurrence.AddDays(1).AddSeconds(-1),
+                            CreatedAt = DateTime.UtcNow
+                        });
+                        periodCounter++;
+                        currentDate = occurrence.AddMonths(intervalValue);
+                        continue;
+                    }
                     periodEndDate = currentDate.AddMonths(1).AddDays(-1).AddHours(23).AddMinutes(59).AddSeconds(59);
                     periodName = $"Month {periodCounter} - {currentDate:MMMM yyyy}";
                     currentDate = currentDate.AddMonths(intervalValue);
@@ -231,5 +271,11 @@ public class FrequencyService : IFrequencyService
             "yearly" => 0, // Will be handled by AddYears
             _ => intervalValue
         };
+    }
+
+    private static DateTime NextDayOfWeek(DateTime start, DayOfWeek day)
+    {
+        int diff = ((int)day - (int)start.DayOfWeek + 7) % 7;
+        return start.Date.AddDays(diff);
     }
 }

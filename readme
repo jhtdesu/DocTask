@@ -1,2 +1,3 @@
 Migrate : dotnet ef migrations add [test] -p DocTask.Data -s DocTask.Api
 Update DB: Migrate : dotnet ef database update [test] -p DocTask.Data -s DocTask.Api
+

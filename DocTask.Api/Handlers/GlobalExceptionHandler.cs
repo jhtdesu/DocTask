@@ -17,20 +17,37 @@ public class GlobalExceptionHandler : IExceptionHandler
     {
         _logger.LogError(exception, "AN ERROR OCCURRED: {Message}", exception.Message);
         httpContext.Response.ContentType = "application/json";
-        
+
+        int statusCode;
+        string message = exception.Message;
+
         if (exception is BaseException baseException)
         {
-            httpContext.Response.StatusCode = baseException.StatusCode;
+            statusCode = baseException.StatusCode;
+        }
+        else if (exception is UnauthorizedAccessException)
+        {
+            statusCode = StatusCodes.Status401Unauthorized;
+        }
+        else if (exception is KeyNotFoundException)
+        {
+            statusCode = StatusCodes.Status404NotFound;
+        }
+        else if (exception is ArgumentException || exception is InvalidOperationException)
+        {
+            statusCode = StatusCodes.Status400BadRequest;
         }
         else
         {
-            httpContext.Response.StatusCode = 500;
+            statusCode = StatusCodes.Status500InternalServerError;
         }
-        
+
+        httpContext.Response.StatusCode = statusCode;
+
         var result = new ApiResponse<object>
         {
             Success = false,
-            Message = exception.Message,
+            Message = message,
             Error = exception.GetType().ToString(),
         };
         await httpContext.Response.WriteAsJsonAsync(result, cancellationToken);

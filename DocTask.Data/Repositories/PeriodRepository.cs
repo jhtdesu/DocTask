@@ -73,6 +73,16 @@ public class PeriodRepository : IPeriodRepository
         return await _context.Periods.FindAsync(id);
     }
 
+    public async Task<List<Period>> GetPeriodsNearCreatedAt(DateTime createdAtUtc, int secondsTolerance = 5)
+    {
+        var start = createdAtUtc.AddSeconds(-Math.Abs(secondsTolerance));
+        var end = createdAtUtc.AddSeconds(Math.Abs(secondsTolerance));
+        return await _context.Periods
+            .Where(p => p.CreatedAt >= start && p.CreatedAt <= end)
+            .OrderBy(p => p.CreatedAt)
+            .ToListAsync();
+    }
+
     public async Task<Period> CreatePeriod(Period period)
     {
         period.CreatedAt = DateTime.UtcNow;

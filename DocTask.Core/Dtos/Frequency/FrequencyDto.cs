@@ -40,6 +40,19 @@ public class CreateFrequencyWithPeriodsRequest
     public int IntervalValue { get; set; }
     public DateTime StartDate { get; set; }
     public DateTime EndDate { get; set; }
+    // Optional helpers to drive period generation
+    public List<int>? DaysOfWeek { get; set; } // 0=Sunday..6=Saturday
+    public int? DayOfMonth { get; set; } // 1..31
+}
+
+// Unified request to support creating just a frequency or frequency with periods
+public class CreateFrequencyUnifiedRequest
+{
+    public string FrequencyType { get; set; } = null!;
+    public string? FrequencyDetail { get; set; }
+    public int IntervalValue { get; set; }
+    public DateTime? StartDate { get; set; }
+    public DateTime? EndDate { get; set; }
 }
 
 public class CreateFrequencyWithPeriodsResponse

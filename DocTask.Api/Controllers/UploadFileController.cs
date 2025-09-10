@@ -4,6 +4,7 @@ using DocTask.Core.Interfaces.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
+using DockTask.Api.Extensions;
 
 namespace DockTask.Api.Controllers;
 
@@ -30,206 +31,135 @@ public class UploadFileController : ControllerBase
                 Error = "Invalid request data" 
             });
         }
-
-        try
+        var userId = User.GetUserId();
+        if (string.IsNullOrEmpty(userId))
         {
-            var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            if (string.IsNullOrEmpty(userId))
-            {
-                return Unauthorized(new ApiResponse<UploadFileDto> 
-                { 
-                    Success = false, 
-                    Error = "User not authenticated" 
-                });
-            }
-
-            var result = await _uploadFileService.UploadFileAsync(request, userId);
-            return Ok(new ApiResponse<UploadFileDto> 
-            { 
-                Success = true, 
-                Data = result, 
-                Message = "File uploaded successfully" 
-            });
-        }
-        catch (ArgumentException ex)
-        {
-            return BadRequest(new ApiResponse<UploadFileDto> 
+            return Unauthorized(new ApiResponse<UploadFileDto> 
             { 
                 Success = false, 
-                Error = ex.Message 
+                Error = "User not authenticated" 
             });
         }
-        catch (Exception ex)
-        {
-            return StatusCode(500, new ApiResponse<UploadFileDto> 
-            { 
-                Success = false, 
-                Error = $"Error uploading file: {ex.Message}" 
-            });
-        }
+
+        var result = await _uploadFileService.UploadFileAsync(request, userId);
+        return Ok(new ApiResponse<UploadFileDto> 
+        { 
+            Success = true, 
+            Data = result, 
+            Message = "File uploaded successfully" 
+        });
     }
 
     [HttpGet("file/{fileId}")]
     public async Task<IActionResult> GetFile(int fileId)
     {
-        try
+        var file = await _uploadFileService.GetFileByIdAsync(fileId);
+        if (file == null)
         {
-            var file = await _uploadFileService.GetFileByIdAsync(fileId);
-            if (file == null)
-            {
-                return NotFound(new ApiResponse<UploadFileDto> 
-                { 
-                    Success = false, 
-                    Error = "File not found" 
-                });
-            }
-
-            return Ok(new ApiResponse<UploadFileDto> 
-            { 
-                Success = true, 
-                Data = file 
-            });
-        }
-        catch (Exception ex)
-        {
-            return StatusCode(500, new ApiResponse<UploadFileDto> 
+            return NotFound(new ApiResponse<UploadFileDto> 
             { 
                 Success = false, 
-                Error = $"Error retrieving file: {ex.Message}" 
+                Error = "File not found" 
             });
         }
+
+        return Ok(new ApiResponse<UploadFileDto> 
+        { 
+            Success = true, 
+            Data = file 
+        });
     }
 
     [HttpGet("files")]
     public async Task<IActionResult> GetUserFiles([FromQuery] PaginationRequest? request = null)
     {
-        try
+        var userId = User.GetUserId();
+        if (string.IsNullOrEmpty(userId))
         {
-            var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            if (string.IsNullOrEmpty(userId))
-            {
-                if (request != null)
-                {
-                    return Unauthorized(new PaginatedApiResponse<UploadFileDto>(false, "User not authenticated"));
-                }
-                else
-                {
-                    return Unauthorized(new ApiResponse<List<UploadFileDto>> 
-                    { 
-                        Success = false, 
-                        Error = "User not authenticated" 
-                    });
-                }
-            }
-
             if (request != null)
             {
-                var files = await _uploadFileService.GetFilesByUserIdPaginated(userId, request);
-                return Ok(new PaginatedApiResponse<UploadFileDto>(files, "Files retrieved successfully"));
+                return Unauthorized(new PaginatedApiResponse<UploadFileDto>(false, "User not authenticated"));
             }
             else
             {
-                var files = await _uploadFileService.GetFilesByUserIdAsync(userId);
-                return Ok(new ApiResponse<List<UploadFileDto>> 
+                return Unauthorized(new ApiResponse<List<UploadFileDto>> 
                 { 
-                    Success = true, 
-                    Data = files 
+                    Success = false, 
+                    Error = "User not authenticated" 
                 });
             }
         }
-        catch (Exception ex)
+
+        if (request != null)
         {
-            if (request != null)
-            {
-                return StatusCode(500, new PaginatedApiResponse<UploadFileDto>(false, $"Error retrieving files: {ex.Message}"));
-            }
-            else
-            {
-                return StatusCode(500, new ApiResponse<List<UploadFileDto>> 
-                { 
-                    Success = false, 
-                    Error = $"Error retrieving files: {ex.Message}" 
-                });
-            }
+            var files = await _uploadFileService.GetFilesByUserIdPaginated(userId, request);
+            return Ok(new PaginatedApiResponse<UploadFileDto>(files, "Files retrieved successfully"));
+        }
+        else
+        {
+            var files = await _uploadFileService.GetFilesByUserIdAsync(userId);
+            return Ok(new ApiResponse<List<UploadFileDto>> 
+            { 
+                Success = true, 
+                Data = files 
+            });
         }
     }
 
     [HttpGet("file/{fileId}/download")]
     public async Task<IActionResult> DownloadFile(int fileId)
     {
-        try
+        var file = await _uploadFileService.GetFileByIdAsync(fileId);
+        if (file == null)
         {
-            var file = await _uploadFileService.GetFileByIdAsync(fileId);
-            if (file == null)
-            {
-                return NotFound(new ApiResponse<object> 
-                { 
-                    Success = false, 
-                    Error = "File not found" 
-                });
-            }
-
-            var fileContent = await _uploadFileService.GetFileContentAsync(fileId);
-            if (fileContent == null)
-            {
-                return NotFound(new ApiResponse<object> 
-                { 
-                    Success = false, 
-                    Error = "File content not found" 
-                });
-            }
-
-            return File(fileContent, file.ContentType, file.FileName);
-        }
-        catch (Exception ex)
-        {
-            return StatusCode(500, new ApiResponse<object> 
+            return NotFound(new ApiResponse<object> 
             { 
                 Success = false, 
-                Error = $"Error downloading file: {ex.Message}" 
+                Error = "File not found" 
             });
         }
+
+        var fileContent = await _uploadFileService.GetFileContentAsync(fileId);
+        if (fileContent == null)
+        {
+            return NotFound(new ApiResponse<object> 
+            { 
+                Success = false, 
+                Error = "File content not found" 
+            });
+        }
+
+        return File(fileContent, file.ContentType, file.FileName);
     }
 
     [HttpDelete("file/{fileId}")]
     public async Task<IActionResult> DeleteFile(int fileId)
     {
-        try
+        var userId = User.GetUserId();
+        if (string.IsNullOrEmpty(userId))
         {
-            var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            if (string.IsNullOrEmpty(userId))
-            {
-                return Unauthorized(new ApiResponse<bool> 
-                { 
-                    Success = false, 
-                    Error = "User not authenticated" 
-                });
-            }
-
-            var result = await _uploadFileService.DeleteFileAsync(fileId, userId);
-            if (!result)
-            {
-                return NotFound(new ApiResponse<bool> 
-                { 
-                    Success = false, 
-                    Error = "File not found or access denied" 
-                });
-            }
-
-            return Ok(new ApiResponse<bool> 
-            { 
-                Success = true, 
-                Data = true, 
-                Message = "File deleted successfully" 
-            });
-        }
-        catch (Exception ex)
-        {
-            return StatusCode(500, new ApiResponse<bool> 
+            return Unauthorized(new ApiResponse<bool> 
             { 
                 Success = false, 
-                Error = $"Error deleting file: {ex.Message}" 
+                Error = "User not authenticated" 
             });
         }
+
+        var result = await _uploadFileService.DeleteFileAsync(fileId, userId);
+        if (!result)
+        {
+            return NotFound(new ApiResponse<bool> 
+            { 
+                Success = false, 
+                Error = "File not found or access denied" 
+            });
+        }
+
+        return Ok(new ApiResponse<bool> 
+        { 
+            Success = true, 
+            Data = true, 
+            Message = "File deleted successfully" 
+        });
     }
 }

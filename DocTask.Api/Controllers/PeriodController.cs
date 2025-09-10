@@ -51,17 +51,9 @@ public class PeriodController : ControllerBase
         {
             return BadRequest(new ApiResponse<PeriodDto> { Success = false, Error = "Invalid request data" });
         }
-
-        try
-        {
-            var period = await _periodService.CreatePeriod(request);
-            return CreatedAtAction(nameof(GetPeriodById), new { id = period.PeriodId }, 
-                new ApiResponse<PeriodDto> { Success = true, Data = period });
-        }
-        catch (Exception ex)
-        {
-            return BadRequest(new ApiResponse<PeriodDto> { Success = false, Error = $"Error creating period: {ex.Message}" });
-        }
+        var period = await _periodService.CreatePeriod(request);
+        return CreatedAtAction(nameof(GetPeriodById), new { id = period.PeriodId }, 
+            new ApiResponse<PeriodDto> { Success = true, Data = period });
     }
 
     [HttpPut("{id}")]
@@ -71,37 +63,22 @@ public class PeriodController : ControllerBase
         {
             return BadRequest(new ApiResponse<PeriodDto> { Success = false, Error = "Invalid request data" });
         }
-
-        try
+        var period = await _periodService.UpdatePeriod(id, request);
+        if (period == null)
         {
-            var period = await _periodService.UpdatePeriod(id, request);
-            if (period == null)
-            {
-                return NotFound(new ApiResponse<PeriodDto> { Success = false, Error = "Period not found" });
-            }
-            return Ok(new ApiResponse<PeriodDto> { Success = true, Data = period });
+            return NotFound(new ApiResponse<PeriodDto> { Success = false, Error = "Period not found" });
         }
-        catch (Exception ex)
-        {
-            return BadRequest(new ApiResponse<PeriodDto> { Success = false, Error = $"Error updating period: {ex.Message}" });
-        }
+        return Ok(new ApiResponse<PeriodDto> { Success = true, Data = period });
     }
 
     [HttpDelete("{id}")]
     public async Task<IActionResult> DeletePeriod(int id)
     {
-        try
+        var result = await _periodService.DeletePeriod(id);
+        if (!result)
         {
-            var result = await _periodService.DeletePeriod(id);
-            if (!result)
-            {
-                return NotFound(new ApiResponse<bool> { Success = false, Error = "Period not found" });
-            }
-            return Ok(new ApiResponse<bool> { Success = true, Data = true, Message = "Period deleted successfully" });
+            return NotFound(new ApiResponse<bool> { Success = false, Error = "Period not found" });
         }
-        catch (Exception ex)
-        {
-            return BadRequest(new ApiResponse<bool> { Success = false, Error = $"Error deleting period: {ex.Message}" });
-        }
+        return Ok(new ApiResponse<bool> { Success = true, Data = true, Message = "Period deleted successfully" });
     }
 }

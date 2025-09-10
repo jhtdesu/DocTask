@@ -1,4 +1,5 @@
 using DocTask.Core.Dtos.Tasks;
+using DocTask.Core.Dtos.Frequency;
 using DocTask.Core.DTOs.ApiResponses;
 using DocTask.Core.Exceptions;
 using DocTask.Core.Interfaces.Repositories;
@@ -6,16 +7,43 @@ using DocTask.Core.Interfaces.Services;
 using DocTask.Core.Models;
 using DocTask.Service.Mappers;
 using TaskEntity = DocTask.Core.Models.Task;
+using System.Linq;
 
 namespace DocTask.Service.Services;
 
 public class TaskService : ITaskService
 {
     private readonly ITaskRepository _taskRepository;
+    private readonly IFrequencyService _frequencyService;
+    private readonly IPeriodRepository _periodRepository;
 
-    public TaskService(ITaskRepository taskRepository)
+    public TaskService(ITaskRepository taskRepository, IFrequencyService frequencyService, IPeriodRepository periodRepository)
     {
         _taskRepository = taskRepository;
+        _frequencyService = frequencyService;
+        _periodRepository = periodRepository;
+    }
+
+    private static PaginationResponse<TDto> BuildPaginationResponse<TDto>(IReadOnlyList<TDto> items, PaginationRequest request, int totalCount)
+    {
+        return new PaginationResponse<TDto>
+        {
+            Data = items.ToList(),
+            CurrentPage = request.Page,
+            PageSize = request.PageSize,
+            TotalCount = totalCount,
+            TotalPages = (int)Math.Ceiling((double)totalCount / request.PageSize)
+        };
+    }
+
+    private async Task<TaskEntity> EnsureParentTaskExists(int parentTaskId)
+    {
+        var parentTask = await _taskRepository.GetTaskById(parentTaskId);
+        if (parentTask == null)
+        {
+            throw new NotFoundException($"Parent task with ID {parentTaskId} not found");
+        }
+        return parentTask;
     }
 
     public async Task<List<TaskDto>> GetAllTasks()
@@ -28,15 +56,7 @@ public class TaskService : ITaskService
     {
         var (items, totalCount) = await _taskRepository.GetTasksPaginated(request);
         var taskDtos = items.Select(TaskMapper.ToDto).ToList();
-        
-        return new PaginationResponse<TaskDto>
-        {
-            Data = taskDtos,
-            CurrentPage = request.Page,
-            PageSize = request.PageSize,
-            TotalCount = totalCount,
-            TotalPages = (int)Math.Ceiling((double)totalCount / request.PageSize)
-        };
+        return BuildPaginationResponse(taskDtos, request, totalCount);
     }
 
     public async Task<TaskDto?> GetTaskById(int id)
@@ -82,14 +102,57 @@ public class TaskService : ITaskService
         return subtasks.Select(TaskMapper.ToDto).ToList();
     }
 
+    public async Task<List<SubtaskWithPeriodsDto>> GetSubtasksWithNearbyPeriods(int parentTaskId, int secondsTolerance = 5)
+    {
+        var subtasks = await _taskRepository.GetSubtasksByParentId(parentTaskId);
+        var results = new List<SubtaskWithPeriodsDto>();
+        foreach (var st in subtasks)
+        {
+            var dto = TaskMapper.ToDto(st);
+            var periods = new List<DocTask.Core.Dtos.Period.PeriodDto>();
+            if (st.PeriodId.HasValue)
+            {
+                var first = await _periodRepository.GetPeriodById(st.PeriodId.Value);
+                if (first != null)
+                {
+                    var nearby = await _periodRepository.GetPeriodsNearCreatedAt(first.CreatedAt, secondsTolerance);
+                    periods = nearby.Select(DocTask.Service.Mappers.PeriodMapper.ToDto).ToList();
+                }
+            }
+            results.Add(new SubtaskWithPeriodsDto { Subtask = dto, Periods = periods });
+        }
+        return results;
+    }
+
     public async Task<PaginationResponse<TaskDto>> GetSubtasksPaginated(int parentTaskId, PaginationRequest request)
     {
         var (items, totalCount) = await _taskRepository.GetSubtasksPaginated(parentTaskId, request);
         var subtaskDtos = items.Select(TaskMapper.ToDto).ToList();
-        
-        return new PaginationResponse<TaskDto>
+        return BuildPaginationResponse(subtaskDtos, request, totalCount);
+    }
+
+    public async Task<PaginationResponse<SubtaskWithPeriodsDto>> GetSubtasksWithNearbyPeriodsPaginated(int parentTaskId, PaginationRequest request, int secondsTolerance = 5)
+    {
+        var (items, totalCount) = await _taskRepository.GetSubtasksPaginated(parentTaskId, request);
+        var list = new List<SubtaskWithPeriodsDto>();
+        foreach (var st in items)
         {
-            Data = subtaskDtos,
+            var dto = TaskMapper.ToDto(st);
+            var periods = new List<DocTask.Core.Dtos.Period.PeriodDto>();
+            if (st.PeriodId.HasValue)
+            {
+                var first = await _periodRepository.GetPeriodById(st.PeriodId.Value);
+                if (first != null)
+                {
+                    var nearby = await _periodRepository.GetPeriodsNearCreatedAt(first.CreatedAt, secondsTolerance);
+                    periods = nearby.Select(DocTask.Service.Mappers.PeriodMapper.ToDto).ToList();
+                }
+            }
+            list.Add(new SubtaskWithPeriodsDto { Subtask = dto, Periods = periods });
+        }
+        return new PaginationResponse<SubtaskWithPeriodsDto>
+        {
+            Data = list,
             CurrentPage = request.Page,
             PageSize = request.PageSize,
             TotalCount = totalCount,
@@ -103,68 +166,137 @@ public class TaskService : ITaskService
         return subtask != null ? TaskMapper.ToDto(subtask) : null;
     }
 
+    public async Task<(TaskDto subtask, List<DocTask.Core.Dtos.Period.PeriodDto> periods)?> GetSubtaskWithNearbyPeriods(int parentTaskId, int subtaskId, int secondsTolerance = 5)
+    {
+        var subtask = await _taskRepository.GetSubtaskById(parentTaskId, subtaskId);
+        if (subtask == null)
+            return null;
+
+        var dto = TaskMapper.ToDto(subtask);
+        var periods = new List<DocTask.Core.Dtos.Period.PeriodDto>();
+        if (subtask.PeriodId.HasValue)
+        {
+            var first = await _periodRepository.GetPeriodById(subtask.PeriodId.Value);
+            if (first != null)
+            {
+                var nearby = await _periodRepository.GetPeriodsNearCreatedAt(first.CreatedAt, secondsTolerance);
+                periods = nearby.Select(DocTask.Service.Mappers.PeriodMapper.ToDto).ToList();
+            }
+        }
+        return (dto, periods);
+    }
+
     public async Task<TaskDto> CreateSubtask(int parentTaskId, CreateSubtaskRequest request)
     {
-        try
-        {
-            var subtask = TaskMapper.ToEntity(request);
-            subtask.ParentTaskId = parentTaskId; // Ensure the parent task ID is set
-            
-            // Validate that the parent task exists
-            var parentTask = await _taskRepository.GetTaskById(parentTaskId);
-            if (parentTask == null)
-            {
-                throw new ArgumentException($"Parent task with ID {parentTaskId} not found");
-            }
-            
-            var createdSubtask = await _taskRepository.CreateSubtask(subtask);
-            return TaskMapper.ToDto(createdSubtask);
-        }
-        catch (Exception ex)
-        {
-            throw new Exception($"Error creating subtask: {ex.Message}", ex);
-        }
+        var subtask = TaskMapper.ToEntity(request);
+        subtask.ParentTaskId = parentTaskId;
+
+        await EnsureParentTaskExists(parentTaskId);
+
+        var createdSubtask = await _taskRepository.CreateSubtask(subtask);
+        return TaskMapper.ToDto(createdSubtask);
     }
 
     public async Task<TaskDto> CreateSubtaskWithAssignments(int parentTaskId, CreateSubtaskWithAssignmentsRequest request)
     {
-        try
-        {
-            // Validate that the parent task exists
-            var parentTask = await _taskRepository.GetTaskById(parentTaskId);
-            if (parentTask == null)
-            {
-                throw new ArgumentException($"Parent task with ID {parentTaskId} not found");
-            }
+        await EnsureParentTaskExists(parentTaskId);
 
-            // Create the subtask entity
-            var subtask = new TaskEntity
+        // Always create frequency and periods automatically based on provided dates
+        int? frequencyId = null;
+        List<DocTask.Core.Dtos.Period.PeriodDto> createdPeriods = new();
+        if (request.StartDate.HasValue && request.DueDate.HasValue)
+        {
+            var freqRequest = new CreateFrequencyWithPeriodsRequest
             {
-                Title = request.Title,
-                Description = request.Description,
-                StartDate = request.StartDate,
-                DueDate = request.DueDate,
-                FrequencyId = request.FrequencyId,
-                PeriodId = request.PeriodId,
-                ParentTaskId = parentTaskId,
-                AssignerId = request.AssignerId,
-                Status = "pending",
-                Priority = "medium",
-                Percentagecomplete = 0
+                FrequencyType = request.Frequency?.FrequencyType ?? "weekly",
+                FrequencyDetail = null,
+                IntervalValue = request.Frequency?.IntervalValue ?? 1,
+                StartDate = request.StartDate.Value,
+                EndDate = request.DueDate.Value,
+                DaysOfWeek = request.Frequency?.DaysOfWeek,
+                DayOfMonth = request.Frequency?.DayOfMonth
             };
 
-            // Convert user assignments to the format expected by the repository
-            var userIds = request.UserAssignments
-                .Select(ua => ua.AssigneeId)
-                .ToList();
+            var created = await _frequencyService.CreateFrequencyWithPeriods(freqRequest);
+            frequencyId = created.Frequency.FrequencyId;
+            createdPeriods = created.CreatedPeriods;
+        }
 
-            var createdSubtask = await _taskRepository.CreateSubtaskWithAssignments(subtask, userIds);
-            return TaskMapper.ToDto(createdSubtask);
-        }
-        catch (Exception ex)
+        var firstPeriodId = createdPeriods.FirstOrDefault()?.PeriodId;
+
+        var subtask = new TaskEntity
         {
-            throw new Exception($"Error creating subtask with assignments: {ex.Message}", ex);
+            Title = request.Title,
+            Description = request.Description,
+            StartDate = request.StartDate,
+            DueDate = request.DueDate,
+            FrequencyId = frequencyId,
+            PeriodId = firstPeriodId,
+            ParentTaskId = parentTaskId,
+            AssignerId = request.AssignerId,
+            Status = "pending",
+            Priority = "medium",
+            Percentagecomplete = 0
+        };
+
+        var userIds = request.UserAssignments
+            .Select(ua => ua.AssigneeId)
+            .ToList();
+
+        var createdSubtask = await _taskRepository.CreateSubtaskWithAssignments(subtask, userIds);
+        // Note: this method returns only TaskDto; periods are returned by the other method
+        return TaskMapper.ToDto(createdSubtask);
+    }
+
+    public async Task<DocTask.Core.Dtos.Tasks.SubtaskCreatedResponse> CreateSubtaskWithAssignmentsAndPeriods(int parentTaskId, CreateSubtaskWithAssignmentsRequest request)
+    {
+        await EnsureParentTaskExists(parentTaskId);
+
+        List<DocTask.Core.Dtos.Period.PeriodDto> createdPeriods = new();
+        int? frequencyId = null;
+        if (request.StartDate.HasValue && request.DueDate.HasValue)
+        {
+            var freqRequest = new CreateFrequencyWithPeriodsRequest
+            {
+                FrequencyType = request.Frequency?.FrequencyType ?? "weekly",
+                FrequencyDetail = null,
+                IntervalValue = request.Frequency?.IntervalValue ?? 1,
+                StartDate = request.StartDate.Value,
+                EndDate = request.DueDate.Value,
+                DaysOfWeek = request.Frequency?.DaysOfWeek,
+                DayOfMonth = request.Frequency?.DayOfMonth
+            };
+            var created = await _frequencyService.CreateFrequencyWithPeriods(freqRequest);
+            frequencyId = created.Frequency.FrequencyId;
+            createdPeriods = created.CreatedPeriods;
         }
+
+        var firstPeriodId2 = createdPeriods.FirstOrDefault()?.PeriodId;
+
+        var userIds = request.UserAssignments.Select(ua => ua.AssigneeId).ToList();
+        var subtaskEntity = new TaskEntity
+        {
+            Title = request.Title,
+            Description = request.Description,
+            StartDate = request.StartDate,
+            DueDate = request.DueDate,
+            FrequencyId = frequencyId,
+            PeriodId = firstPeriodId2,
+            ParentTaskId = parentTaskId,
+            AssignerId = request.AssignerId,
+            Status = "pending",
+            Priority = "medium",
+            Percentagecomplete = 0
+        };
+
+        var createdSubtask = await _taskRepository.CreateSubtaskWithAssignments(subtaskEntity, userIds);
+        var dto = TaskMapper.ToDto(createdSubtask);
+
+        return new DocTask.Core.Dtos.Tasks.SubtaskCreatedResponse
+        {
+            Subtask = dto,
+            Periods = createdPeriods
+        };
     }
 
     public async Task<TaskDto?> UpdateSubtask(int parentTaskId, int subtaskId, UpdateTaskRequest request)
@@ -180,48 +312,37 @@ public class TaskService : ITaskService
 
     public async Task<TaskDto?> UpdateSubtaskWithAssignments(int parentTaskId, int subtaskId, UpdateSubtaskWithAssignmentsRequest request)
     {
-        try
+        var existingSubtask = await _taskRepository.GetSubtaskById(parentTaskId, subtaskId);
+        if (existingSubtask == null)
+            return null;
+
+        if (!string.IsNullOrEmpty(request.Title))
+            existingSubtask.Title = request.Title;
+        if (request.Description != null)
+            existingSubtask.Description = request.Description;
+        if (request.StartDate.HasValue)
+            existingSubtask.StartDate = request.StartDate;
+        if (request.DueDate.HasValue)
+            existingSubtask.DueDate = request.DueDate;
+        if (request.FrequencyId.HasValue)
+            existingSubtask.FrequencyId = request.FrequencyId;
+        if (request.PeriodId.HasValue)
+            existingSubtask.PeriodId = request.PeriodId;
+        if (!string.IsNullOrEmpty(request.AssignerId))
+            existingSubtask.AssignerId = request.AssignerId;
+
+        if (request.UserAssignments.Any())
         {
-            var existingSubtask = await _taskRepository.GetSubtaskById(parentTaskId, subtaskId);
-            if (existingSubtask == null)
-                return null;
-
-            // Update basic properties
-            if (!string.IsNullOrEmpty(request.Title))
-                existingSubtask.Title = request.Title;
-            if (request.Description != null)
-                existingSubtask.Description = request.Description;
-            if (request.StartDate.HasValue)
-                existingSubtask.StartDate = request.StartDate;
-            if (request.DueDate.HasValue)
-                existingSubtask.DueDate = request.DueDate;
-            if (request.FrequencyId.HasValue)
-                existingSubtask.FrequencyId = request.FrequencyId;
-            if (request.PeriodId.HasValue)
-                existingSubtask.PeriodId = request.PeriodId;
-            if (!string.IsNullOrEmpty(request.AssignerId))
-                existingSubtask.AssignerId = request.AssignerId;
-
-            // Update user assignments if provided
-            if (request.UserAssignments.Any())
-            {
-                var userIds = request.UserAssignments
-                    .Select(ua => ua.AssigneeId)
-                    .ToList();
-                
-                var updatedSubtask = await _taskRepository.UpdateSubtaskWithAssignments(parentTaskId, existingSubtask, userIds);
-                return updatedSubtask != null ? TaskMapper.ToDto(updatedSubtask) : null;
-            }
-            else
-            {
-                // Just update the subtask without changing assignments
-                var updatedSubtask = await _taskRepository.UpdateSubtask(parentTaskId, existingSubtask);
-                return updatedSubtask != null ? TaskMapper.ToDto(updatedSubtask) : null;
-            }
+            var userIds = request.UserAssignments
+                .Select(ua => ua.AssigneeId)
+                .ToList();
+            var updatedSubtask = await _taskRepository.UpdateSubtaskWithAssignments(parentTaskId, existingSubtask, userIds);
+            return updatedSubtask != null ? TaskMapper.ToDto(updatedSubtask) : null;
         }
-        catch (Exception ex)
+        else
         {
-            throw new Exception($"Error updating subtask with assignments: {ex.Message}", ex);
+            var updatedSubtask = await _taskRepository.UpdateSubtask(parentTaskId, existingSubtask);
+            return updatedSubtask != null ? TaskMapper.ToDto(updatedSubtask) : null;
         }
     }
 

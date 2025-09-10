@@ -45,23 +45,44 @@ public class FrequencyController : ControllerBase
     }
 
     [HttpPost]
-    public async Task<IActionResult> CreateFrequency([FromBody] CreateFrequencyRequest request)
+    public async Task<IActionResult> CreateFrequency([FromBody] CreateFrequencyUnifiedRequest request)
     {
         if (!ModelState.IsValid)
         {
-            return BadRequest(new ApiResponse<FrequencyDto> { Success = false, Error = "Invalid request data" });
+            return BadRequest(new ApiResponse<object> { Success = false, Error = "Invalid request data" });
+        }
+        // If dates are provided, create frequency and periods together
+        if (request.StartDate.HasValue && request.EndDate.HasValue)
+        {
+            var comboReq = new CreateFrequencyWithPeriodsRequest
+            {
+                FrequencyType = request.FrequencyType,
+                FrequencyDetail = request.FrequencyDetail,
+                IntervalValue = request.IntervalValue,
+                StartDate = request.StartDate.Value,
+                EndDate = request.EndDate.Value
+            };
+
+            var result = await _frequencyService.CreateFrequencyWithPeriods(comboReq);
+            return Ok(new ApiResponse<CreateFrequencyWithPeriodsResponse>
+            {
+                Success = true,
+                Data = result,
+                Message = $"Successfully created frequency and {result.TotalPeriodsCreated} periods"
+            });
         }
 
-        try
+        // Otherwise, create just the frequency
+        var createOnly = new CreateFrequencyRequest
         {
-            var frequency = await _frequencyService.CreateFrequency(request);
-            return CreatedAtAction(nameof(GetFrequencyById), new { id = frequency.FrequencyId }, 
-                new ApiResponse<FrequencyDto> { Success = true, Data = frequency });
-        }
-        catch (Exception ex)
-        {
-            return BadRequest(new ApiResponse<FrequencyDto> { Success = false, Error = $"Error creating frequency: {ex.Message}" });
-        }
+            FrequencyType = request.FrequencyType,
+            FrequencyDetail = request.FrequencyDetail,
+            IntervalValue = request.IntervalValue
+        };
+
+        var frequency = await _frequencyService.CreateFrequency(createOnly);
+        return CreatedAtAction(nameof(GetFrequencyById), new { id = frequency.FrequencyId },
+            new ApiResponse<FrequencyDto> { Success = true, Data = frequency });
     }
 
     [HttpPut("{id}")]
@@ -71,38 +92,23 @@ public class FrequencyController : ControllerBase
         {
             return BadRequest(new ApiResponse<FrequencyDto> { Success = false, Error = "Invalid request data" });
         }
-
-        try
+        var frequency = await _frequencyService.UpdateFrequency(id, request);
+        if (frequency == null)
         {
-            var frequency = await _frequencyService.UpdateFrequency(id, request);
-            if (frequency == null)
-            {
-                return NotFound(new ApiResponse<FrequencyDto> { Success = false, Error = "Frequency not found" });
-            }
-            return Ok(new ApiResponse<FrequencyDto> { Success = true, Data = frequency });
+            return NotFound(new ApiResponse<FrequencyDto> { Success = false, Error = "Frequency not found" });
         }
-        catch (Exception ex)
-        {
-            return BadRequest(new ApiResponse<FrequencyDto> { Success = false, Error = $"Error updating frequency: {ex.Message}" });
-        }
+        return Ok(new ApiResponse<FrequencyDto> { Success = true, Data = frequency });
     }
 
     [HttpDelete("{id}")]
     public async Task<IActionResult> DeleteFrequency(int id)
     {
-        try
+        var result = await _frequencyService.DeleteFrequency(id);
+        if (!result)
         {
-            var result = await _frequencyService.DeleteFrequency(id);
-            if (!result)
-            {
-                return NotFound(new ApiResponse<bool> { Success = false, Error = "Frequency not found" });
-            }
-            return Ok(new ApiResponse<bool> { Success = true, Data = true, Message = "Frequency deleted successfully" });
+            return NotFound(new ApiResponse<bool> { Success = false, Error = "Frequency not found" });
         }
-        catch (Exception ex)
-        {
-            return BadRequest(new ApiResponse<bool> { Success = false, Error = $"Error deleting frequency: {ex.Message}" });
-        }
+        return Ok(new ApiResponse<bool> { Success = true, Data = true, Message = "Frequency deleted successfully" });
     }
 
     [HttpGet("{frequencyId}/details")]
@@ -127,61 +133,20 @@ public class FrequencyController : ControllerBase
         {
             return BadRequest(new ApiResponse<FrequencyDetailDto> { Success = false, Error = "Invalid request data" });
         }
-
-        try
-        {
-            var detail = await _frequencyService.CreateFrequencyDetail(request);
-            return Ok(new ApiResponse<FrequencyDetailDto> { Success = true, Data = detail });
-        }
-        catch (Exception ex)
-        {
-            return BadRequest(new ApiResponse<FrequencyDetailDto> { Success = false, Error = $"Error creating frequency detail: {ex.Message}" });
-        }
+        var detail = await _frequencyService.CreateFrequencyDetail(request);
+        return Ok(new ApiResponse<FrequencyDetailDto> { Success = true, Data = detail });
     }
 
     [HttpDelete("details/{id}")]
     public async Task<IActionResult> DeleteFrequencyDetail(int id)
     {
-        try
+        var result = await _frequencyService.DeleteFrequencyDetail(id);
+        if (!result)
         {
-            var result = await _frequencyService.DeleteFrequencyDetail(id);
-            if (!result)
-            {
-                return NotFound(new ApiResponse<bool> { Success = false, Error = "Frequency detail not found" });
-            }
-            return Ok(new ApiResponse<bool> { Success = true, Data = true, Message = "Frequency detail deleted successfully" });
+            return NotFound(new ApiResponse<bool> { Success = false, Error = "Frequency detail not found" });
         }
-        catch (Exception ex)
-        {
-            return BadRequest(new ApiResponse<bool> { Success = false, Error = $"Error deleting frequency detail: {ex.Message}" });
-        }
+        return Ok(new ApiResponse<bool> { Success = true, Data = true, Message = "Frequency detail deleted successfully" });
     }
 
-    [HttpPost("with-periods")]
-    public async Task<IActionResult> CreateFrequencyWithPeriods([FromBody] CreateFrequencyWithPeriodsRequest request)
-    {
-        if (!ModelState.IsValid)
-        {
-            return BadRequest(new ApiResponse<CreateFrequencyWithPeriodsResponse> { Success = false, Error = "Invalid request data" });
-        }
-
-        try
-        {
-            var result = await _frequencyService.CreateFrequencyWithPeriods(request);
-            return Ok(new ApiResponse<CreateFrequencyWithPeriodsResponse> 
-            { 
-                Success = true, 
-                Data = result,
-                Message = $"Successfully created frequency and {result.TotalPeriodsCreated} periods"
-            });
-        }
-        catch (Exception ex)
-        {
-            return BadRequest(new ApiResponse<CreateFrequencyWithPeriodsResponse> 
-            { 
-                Success = false, 
-                Error = $"Error creating frequency with periods: {ex.Message}" 
-            });
-        }
-    }
+    // Removed excess: unified into POST /api/v1/frequency
 }

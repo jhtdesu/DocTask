@@ -4,6 +4,7 @@ using DocTask.Core.Interfaces.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
 using System.Security.Claims;
+using DockTask.Api.Extensions;
 
 namespace DockTask.Api.Controllers;
 
@@ -55,15 +56,8 @@ public class TaskController : ControllerBase
             return BadRequest(new ApiResponse<TaskDto> { Success = false, Error = "Invalid request data" });
         }
 
-        try
-        {
-            var task = await _taskService.CreateTask(request);
-            return CreatedAtAction(nameof(GetTaskById), new { id = task.TaskId }, new ApiResponse<TaskDto> { Success = true, Data = task });
-        }
-        catch (Exception ex)
-        {
-            return BadRequest(new ApiResponse<TaskDto> { Success = false, Error = $"Error creating task: {ex.Message}" });
-        }
+        var task = await _taskService.CreateTask(request);
+        return CreatedAtAction(nameof(GetTaskById), new { id = task.TaskId }, new ApiResponse<TaskDto> { Success = true, Data = task });
     }
 
     [Authorize]
@@ -75,38 +69,24 @@ public class TaskController : ControllerBase
             return BadRequest(new ApiResponse<TaskDto> { Success = false, Error = "Invalid request data" });
         }
 
-        try
+        var task = await _taskService.UpdateTask(id, request);
+        if (task == null)
         {
-            var task = await _taskService.UpdateTask(id, request);
-            if (task == null)
-            {
-                return NotFound(new ApiResponse<TaskDto> { Success = false, Error = "Task not found" });
-            }
-            return Ok(new ApiResponse<TaskDto> { Success = true, Data = task });
+            return NotFound(new ApiResponse<TaskDto> { Success = false, Error = "Task not found" });
         }
-        catch (Exception ex)
-        {
-            return BadRequest(new ApiResponse<TaskDto> { Success = false, Error = $"Error updating task: {ex.Message}" });
-        }
+        return Ok(new ApiResponse<TaskDto> { Success = true, Data = task });
     }
 
     [Authorize]
     [HttpDelete("{id}")]
     public async Task<IActionResult> DeleteTask(int id)
     {
-        try
+        var result = await _taskService.DeleteTask(id);
+        if (!result)
         {
-            var result = await _taskService.DeleteTask(id);
-            if (!result)
-            {
-                return NotFound(new ApiResponse<bool> { Success = false, Error = "Task not found" });
-            }
-            return Ok(new ApiResponse<bool> { Success = true, Data = true, Message = "Task deleted successfully" });
+            return NotFound(new ApiResponse<bool> { Success = false, Error = "Task not found" });
         }
-        catch (Exception ex)
-        {
-            return BadRequest(new ApiResponse<bool> { Success = false, Error = $"Error deleting task: {ex.Message}" });
-        }
+        return Ok(new ApiResponse<bool> { Success = true, Data = true, Message = "Task deleted successfully" });
     }
 
     [Authorize]
@@ -115,13 +95,13 @@ public class TaskController : ControllerBase
     {
         if (request != null)
         {
-            var subtasks = await _taskService.GetSubtasksPaginated(parentTaskId, request);
-            return Ok(new PaginatedApiResponse<TaskDto>(subtasks, "Subtasks retrieved successfully"));
+            var subtasks = await _taskService.GetSubtasksWithNearbyPeriodsPaginated(parentTaskId, request, 5);
+            return Ok(new PaginatedApiResponse<SubtaskWithPeriodsDto>(subtasks, "Subtasks retrieved successfully"));
         }
         else
         {
-            var subtasks = await _taskService.GetSubtasksByParentId(parentTaskId);
-            return Ok(new ApiResponse<List<TaskDto>> { Success = true, Data = subtasks });
+            var subtasks = await _taskService.GetSubtasksWithNearbyPeriods(parentTaskId, 5);
+            return Ok(new ApiResponse<List<SubtaskWithPeriodsDto>> { Success = true, Data = subtasks });
         }
     }
 
@@ -129,12 +109,12 @@ public class TaskController : ControllerBase
     [HttpGet("{parentTaskId}/subtasks/{subtaskId}")]
     public async Task<IActionResult> GetSubtaskById(int parentTaskId, int subtaskId)
     {
-        var subtask = await _taskService.GetSubtaskById(parentTaskId, subtaskId);
-        if (subtask == null)
+        var result = await _taskService.GetSubtaskWithNearbyPeriods(parentTaskId, subtaskId, 5);
+        if (result == null)
         {
             return NotFound(new ApiResponse<TaskDto> { Success = false, Error = "Subtask not found" });
         }
-        return Ok(new ApiResponse<TaskDto> { Success = true, Data = subtask });
+        return Ok(new ApiResponse<object> { Success = true, Data = new { subtask = result.Value.subtask, periods = result.Value.periods } });
     }
 
     [Authorize]
@@ -146,32 +126,19 @@ public class TaskController : ControllerBase
             return BadRequest(new ApiResponse<TaskDto> { Success = false, Error = "Invalid request data" });
         }
 
-        try
+        // Get the current user ID from the claims
+        var currentUserId = User.GetUserId();
+        if (string.IsNullOrEmpty(currentUserId))
         {
-            // Get the current user ID from the claims
-            var currentUserId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            if (string.IsNullOrEmpty(currentUserId))
-            {
-                return Unauthorized(new ApiResponse<TaskDto> { Success = false, Error = "User not authenticated" });
-            }
-
-            // Set the assigner ID to the current user
-            request.AssignerId = currentUserId;
-
-
-            var subtask = await _taskService.CreateSubtaskWithAssignments(parentTaskId, request);
-            return CreatedAtAction(nameof(GetSubtaskById), new { parentTaskId, subtaskId = subtask.TaskId }, 
-                new ApiResponse<TaskDto> { Success = true, Data = subtask, Message = "Subtask created with user assignments successfully" });
+            return Unauthorized(new ApiResponse<TaskDto> { Success = false, Error = "User not authenticated" });
         }
-        catch (Exception ex)
-        {
-            // Enhanced error logging for debugging
-            var errorMessage = ex.InnerException?.Message ?? ex.Message;
-            return BadRequest(new ApiResponse<TaskDto> { 
-                Success = false, 
-                Error = $"Error creating subtask: {errorMessage}" 
-            });
-        }
+
+        // Set the assigner ID to the current user
+        request.AssignerId = currentUserId;
+
+        var result = await _taskService.CreateSubtaskWithAssignmentsAndPeriods(parentTaskId, request);
+        return CreatedAtAction(nameof(GetSubtaskById), new { parentTaskId, subtaskId = result.Subtask.TaskId }, 
+            new ApiResponse<object> { Success = true, Data = new { subtask = result.Subtask, periods = result.Periods }, Message = "Subtask created with periods successfully" });
     }
 
     [Authorize]
@@ -183,57 +150,37 @@ public class TaskController : ControllerBase
             return BadRequest(new ApiResponse<TaskDto> { Success = false, Error = "Invalid request data" });
         }
 
-        try
+        // Get the current user ID from the claims
+        var currentUserId = User.GetUserId();
+        if (string.IsNullOrEmpty(currentUserId))
         {
-            // Get the current user ID from the claims
-            var currentUserId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            if (string.IsNullOrEmpty(currentUserId))
-            {
-                return Unauthorized(new ApiResponse<TaskDto> { Success = false, Error = "User not authenticated" });
-            }
-
-            // Set the assigner ID to the current user if not provided
-            if (string.IsNullOrEmpty(request.AssignerId))
-            {
-                request.AssignerId = currentUserId;
-            }
-
-
-            var subtask = await _taskService.UpdateSubtaskWithAssignments(parentTaskId, subtaskId, request);
-            if (subtask == null)
-            {
-                return NotFound(new ApiResponse<TaskDto> { Success = false, Error = "Subtask not found" });
-            }
-            return Ok(new ApiResponse<TaskDto> { Success = true, Data = subtask, Message = "Subtask updated with user assignments successfully" });
+            return Unauthorized(new ApiResponse<TaskDto> { Success = false, Error = "User not authenticated" });
         }
-        catch (Exception ex)
+
+        // Set the assigner ID to the current user if not provided
+        if (string.IsNullOrEmpty(request.AssignerId))
         {
-            // Enhanced error logging for debugging
-            var errorMessage = ex.InnerException?.Message ?? ex.Message;
-            return BadRequest(new ApiResponse<TaskDto> { 
-                Success = false, 
-                Error = $"Error updating subtask: {errorMessage}" 
-            });
+            request.AssignerId = currentUserId;
         }
+
+        var subtask = await _taskService.UpdateSubtaskWithAssignments(parentTaskId, subtaskId, request);
+        if (subtask == null)
+        {
+            return NotFound(new ApiResponse<TaskDto> { Success = false, Error = "Subtask not found" });
+        }
+        return Ok(new ApiResponse<TaskDto> { Success = true, Data = subtask, Message = "Subtask updated with user assignments successfully" });
     }
 
     [Authorize]
     [HttpDelete("{parentTaskId}/subtasks/{subtaskId}")]
     public async Task<IActionResult> DeleteSubtask(int parentTaskId, int subtaskId)
     {
-        try
+        var result = await _taskService.DeleteSubtask(parentTaskId, subtaskId);
+        if (!result)
         {
-            var result = await _taskService.DeleteSubtask(parentTaskId, subtaskId);
-            if (!result)
-            {
-                return NotFound(new ApiResponse<bool> { Success = false, Error = "Subtask not found" });
-            }
-            return Ok(new ApiResponse<bool> { Success = true, Data = true, Message = "Subtask deleted successfully" });
+            return NotFound(new ApiResponse<bool> { Success = false, Error = "Subtask not found" });
         }
-        catch (Exception ex)
-        {
-            return BadRequest(new ApiResponse<bool> { Success = false, Error = $"Error deleting subtask: {ex.Message}" });
-        }
+        return Ok(new ApiResponse<bool> { Success = true, Data = true, Message = "Subtask deleted successfully" });
     }
 
 }

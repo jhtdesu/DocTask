@@ -8,6 +8,7 @@ public interface IPeriodRepository
     Task<List<Period>> GetAllPeriods();
     Task<(List<Period> items, int totalCount)> GetPeriodsPaginated(PaginationRequest request);
     Task<Period?> GetPeriodById(int id);
+    Task<List<Period>> GetPeriodsNearCreatedAt(DateTime createdAtUtc, int secondsTolerance = 5);
     Task<Period> CreatePeriod(Period period);
     Task<Period?> UpdatePeriod(Period period);
     Task<bool> DeletePeriod(int id);
